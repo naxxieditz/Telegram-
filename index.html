@@ -1,35 +1,776 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Channels Directory</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Telegram Channel Hub | Join & Manage Private Channels</title>
+  <!-- Google Fonts + Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Firebase SDKs (modular) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+      }
+    }
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(145deg, #f8fafd 0%, #edf2f9 100%);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    /* Header Area */
+    .hero {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      background: linear-gradient(125deg, #1e96e0, #0f5e8a, #1e3b5c);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .hero h1 i {
+      background: none;
+      color: #2a9df4;
+      margin-right: 12px;
+    }
+
+    .hero p {
+      color: #4a627a;
+      font-size: 1.1rem;
+      margin-top: 8px;
+      font-weight: 500;
+    }
+
+    .badge-private {
+      background: #eef2fa;
+      padding: 4px 12px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #1e6f5c;
+      display: inline-block;
+      margin-left: 8px;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 0.6rem 1.5rem;
+      border-radius: 60px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      font-weight: 600;
+      color: #1e4663;
+    }
+
+    .stat-card i {
+      color: #2a9df4;
+      margin-right: 8px;
+    }
+
+    /* Channels Grid (top section) */
+    .channels-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 1rem 0 1.5rem 0;
+      flex-wrap: wrap;
+    }
+
+    .channels-header h2 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #1e2f3e;
+    }
+
+    .channel-count {
+      background: #eef2fa;
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #2c6282;
+    }
+
+    .channels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.8rem;
+      margin-bottom: 3rem;
+    }
+
+    .channel-card {
+      background: white;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(2px);
+    }
+
+    .channel-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 24px 40px -14px rgba(0, 0, 0, 0.2);
+      border-color: rgba(42, 157, 244, 0.3);
+    }
+
+    .card-icon {
+      background: linear-gradient(135deg, #e9f3fe, #dceaff);
+      text-align: center;
+      padding: 1.4rem 0 0.6rem;
+      font-size: 3rem;
+      color: #2a9df4;
+    }
+
+    .card-content {
+      padding: 1.2rem 1.5rem;
+      flex: 1;
+    }
+
+    .channel-name {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0f2b3b;
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .channel-desc {
+      color: #5b6f82;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .channel-meta {
+      background: #f8fafd;
+      padding: 6px 12px;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      color: #2c5a74;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      word-break: break-all;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 10px;
+      padding: 1rem 1.5rem 1.5rem;
+      border-top: 1px solid #edf2f7;
+      background: #fefefe;
+    }
+
+    .join-btn {
+      flex: 2;
+      background: #27a0e5;
+      color: white;
+      padding: 10px 0;
+      text-align: center;
+      border-radius: 60px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .join-btn:hover {
+      background: #1e7eb8;
+      transform: scale(1.01);
+      box-shadow: 0 6px 14px rgba(39,160,229,0.3);
+    }
+
+    .edit-btn, .delete-btn {
+      background: #f1f5f9;
+      border: none;
+      width: 44px;
+      border-radius: 40px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: 0.2s;
+      color: #4b6a82;
+    }
+
+    .edit-btn:hover {
+      background: #e2eafc;
+      color: #2a7faa;
+    }
+
+    .delete-btn:hover {
+      background: #ffe6e5;
+      color: #e34f4f;
+    }
+
+    /* Add Channel Section (BELOW channels list) */
+    .add-channel-section {
+      background: white;
+      border-radius: 32px;
+      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.08);
+      padding: 2rem 2rem 2.2rem;
+      margin: 2rem 0 2rem;
+      border: 1px solid rgba(0, 110, 255, 0.08);
+      transition: all 0.2s;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .section-header h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #0c4e6e;
+    }
+
+    .section-header h2 i {
+      color: #2a9df4;
+      margin-right: 10px;
+    }
+
+    #cancelEdit {
+      background: #eef2fa;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #2c6282;
+      transition: 0.2s;
+    }
+
+    #cancelEdit:hover {
+      background: #e2e8f2;
+      color: #0f3b55;
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .form-group {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1f4b62;
+      font-size: 0.85rem;
+    }
+
+    label i {
+      margin-right: 8px;
+      color: #2a9df4;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 14px 18px;
+      border: 2px solid #e2e8f0;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      transition: 0.2s;
+      background: #ffffff;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #2a9df4;
+      box-shadow: 0 0 0 3px rgba(42, 157, 244, 0.15);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-actions {
+      text-align: right;
+      margin-top: 1rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(105deg, #1e96e0, #2a7eb0);
+      border: none;
+      padding: 12px 32px;
+      border-radius: 40px;
+      color: white;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 5px 12px rgba(30, 150, 224, 0.3);
+    }
+
+    .btn-primary i {
+      margin-right: 8px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 22px -8px #1e96e0;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      background: white;
+      border-radius: 40px;
+      color: #8497a8;
+      grid-column: 1 / -1;
+    }
+
+    .empty-state i {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      color: #bdd4e8;
+    }
+
+    .loading-spinner {
+      text-align: center;
+      padding: 2rem;
+      color: #2a9df4;
+      grid-column: 1/-1;
+      font-size: 1.2rem;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      padding: 1.5rem;
+      color: #6a7f9b;
+      font-size: 0.8rem;
+      border-top: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .helper-note {
+      background: #f0f7fe;
+      border-radius: 16px;
+      padding: 12px 16px;
+      margin-top: 12px;
+      font-size: 0.8rem;
+      color: #2c6282;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    @media (max-width: 700px) {
+      .container {
+        padding: 0 0.5rem;
+      }
+      .hero h1 {
+        font-size: 2rem;
+      }
+      .channels-grid {
+        grid-template-columns: 1fr;
+      }
+      .add-channel-section {
+        padding: 1.4rem;
+      }
+      .form-row {
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+    }
+
+    .toast-message {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #1f2f3e;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 60px;
+      font-weight: 500;
+      z-index: 1000;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
+<div class="container">
+  <div class="hero">
+    <h1><i class="fab fa-telegram"></i> Telegram Channel Hub</h1>
+    <p>Supports public channels & private invite links • Join any Telegram community</p>
+  </div>
 
-    <header>
-        <nav>
-            <div class="logo">Telegram<span>Channels</span></div>
-        </nav>
-    </header>
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card"><i class="fas fa-channels"></i> <span id="totalChannels">0</span> Channels</div>
+    <div class="stat-card"><i class="fas fa-lock"></i> Private/Public links both accepted</div>
+  </div>
 
-    <main>
-        <section class="hero">
-            <h1>Best Telegram Channels Khojein</h1>
-            <p>Direct join buttons ke saath sabhi category ke channels yahan maujood hain.</p>
-        </section>
+  <!-- Channels List Section (top) -->
+  <div class="channels-header">
+    <h2><i class="fas fa-list-ul"></i> All Telegram Channels</h2>
+    <div class="channel-count" id="liveCountBadge">✨ click Join to join</div>
+  </div>
+  <div id="channelList" class="channels-grid">
+    <div class="loading-spinner"><i class="fas fa-spinner fa-pulse"></i> Loading channels from cloud...</div>
+  </div>
 
-        <!-- Channel Display Container -->
-        <div class="container" id="channel-container">
-            <!-- Channels dynamically yahan load honge -->
+  <!-- Add / Edit Channel Section (BELOW everything) -->
+  <div class="add-channel-section" id="addChannelSection">
+    <div class="section-header">
+      <h2 id="formTitle"><i class="fas fa-plus-circle"></i> Manage Channel</h2>
+      <button id="cancelEdit" style="display: none;"><i class="fas fa-times"></i> Cancel Edit</button>
+    </div>
+    <form id="addChannelForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label><i class="fas fa-heading"></i> Channel Name *</label>
+          <input type="text" id="channelName" placeholder="e.g., Crypto VIP, Tech Insider" required>
         </div>
-    </main>
+        <div class="form-group">
+          <label><i class="fab fa-telegram"></i> Telegram Link *</label>
+          <input type="text" id="channelUrl" placeholder="t.me/joinchat/xxxx  or  t.me/+abcde  or  https://t.me/username" required>
+          <small style="color:#5f7f9e; display:block; margin-top:4px;">✅ Private invites: t.me/joinchat/... , t.me/+... , t.me/c/... , invite links all work</small>
+        </div>
+      </div>
+      <div class="form-group">
+        <label><i class="fas fa-info-circle"></i> Description (optional)</label>
+        <textarea id="channelDesc" placeholder="Describe what members will get ..."></textarea>
+      </div>
+      <div class="helper-note">
+        <i class="fas fa-check-circle" style="color:#2a9df4;"></i>
+        <span>Now accepts ALL Telegram formats: <strong>t.me/username</strong>, <strong>t.me/joinchat/...</strong>, <strong>t.me/+invitecode</strong>, and private channel links. No more invalid errors!</span>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" id="submitBtn"><i class="fas fa-save"></i> Add Channel</button>
+      </div>
+    </form>
+  </div>
+  <footer>
+    <i class="fab fa-telegram"></i> Private & Public channels • Admins can add/edit/remove • Click Join to instantly open Telegram
+  </footer>
+</div>
+<div id="toastMsg" class="toast-message"></div>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database-compat.js"></script>
-    <script src="script.js"></script>
+<script type="module">
+  import { initializeApp } from "firebase/app";
+  import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc, orderBy, query } from "firebase/firestore";
+
+  // Provided Firebase config (exactly as user specified)
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4nik_P57h9Ks8ryj0pG2xYNX-ePXKXtY",
+    authDomain: "shoes-shopping-app-6a1d3.firebaseapp.com",
+    databaseURL: "https://shoes-shopping-app-6a1d3-default-rtdb.firebaseio.com",
+    projectId: "shoes-shopping-app-6a1d3",
+    storageBucket: "shoes-shopping-app-6a1d3.appspot.com",
+    messagingSenderId: "816065792865",
+    appId: "1:816065792865:web:b1d58fab547f98e4961320",
+    measurementId: "G-7BVQVYSMDF"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const channelsCollection = collection(db, "telegramChannels");
+  
+  // DOM Elements
+  const channelListDiv = document.getElementById('channelList');
+  const channelNameInput = document.getElementById('channelName');
+  const channelUrlInput = document.getElementById('channelUrl');
+  const channelDescInput = document.getElementById('channelDesc');
+  const submitBtn = document.getElementById('submitBtn');
+  const formTitle = document.getElementById('formTitle');
+  const cancelEditBtn = document.getElementById('cancelEdit');
+  const totalChannelsSpan = document.getElementById('totalChannels');
+  
+  let editMode = false;
+  let editDocId = null;
+  
+  function showToast(message, isError = false) {
+    const toast = document.getElementById('toastMsg');
+    toast.textContent = message;
+    toast.style.backgroundColor = isError ? '#bc3f2e' : '#1e4663';
+    toast.style.opacity = '1';
+    setTimeout(() => {
+      toast.style.opacity = '0';
+    }, 3000);
+  }
+  
+  // ========== FIXED: Telegram link validator that accepts private channel links ==========
+  // Now supports: t.me/username, t.me/joinchat/XXXX, t.me/+invitecode, t.me/c/123/..., https://t.me/anything, telegram.me/*
+  function isValidTelegramLink(url) {
+    if (!url || typeof url !== 'string') return false;
+    const trimmed = url.trim();
+    if (trimmed === "") return false;
+    
+    // Allow any URL that contains t.me, telegram.me, telegram.dog with any path
+    // Private invites: t.me/joinchat/*, t.me/+*, t.me/c/*, and any alphanumeric + symbols allowed
+    const pattern = /^(https?:\/\/)?(www\.)?(t\.me|telegram\.me|telegram\.dog)\/([a-zA-Z0-9_\+]+)(\/[a-zA-Z0-9_\-]+)?(\?[a-zA-Z0-9=&]+)?$/;
+    
+    // Also allow direct invite format like t.me/joinchat/ABCDEFG_123 (supports underscores, hyphens)
+    const extendedPattern = /^(https?:\/\/)?(www\.)?(t\.me|telegram\.me|telegram\.dog)\/(joinchat\/[A-Za-z0-9_-]+|[+][A-Za-z0-9]+|[c]\/[0-9]+\/[A-Za-z0-9_-]+|[A-Za-z0-9_]+)$/i;
+    
+    // Also allow any valid-looking invite that has at least one slash after domain
+    // Additionally accept any link that starts with t.me/ and has length > 5
+    if (trimmed.match(/^(https?:\/\/)?(www\.)?t\.me\/.+/i)) {
+      // Extra safety: ensure not empty after domain
+      const afterDomain = trimmed.split(/t\.me\/|telegram\.me\//i)[1];
+      if (afterDomain && afterDomain.trim().length > 0) return true;
+    }
+    
+    return pattern.test(trimmed) || extendedPattern.test(trimmed);
+  }
+  
+  // Format URL to ensure proper https prefix for join button
+  function formatJoinUrl(rawUrl) {
+    let url = rawUrl.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      url = 'https://' + url;
+    }
+    return url;
+  }
+  
+  // Render channels from Firestore
+  async function renderChannels() {
+    channelListDiv.innerHTML = `<div class="loading-spinner"><i class="fas fa-spinner fa-pulse"></i> Loading channels...</div>`;
+    try {
+      const q = query(channelsCollection, orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      const channels = [];
+      querySnapshot.forEach(docSnap => {
+        channels.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      
+      totalChannelsSpan.innerText = channels.length;
+      
+      if (channels.length === 0) {
+        channelListDiv.innerHTML = `<div class="empty-state"><i class="fab fa-telegram-plane"></i><h3>No channels yet</h3><p>Use the form below to add your first Telegram channel (private invites work!) ✨</p></div>`;
+        return;
+      }
+      
+      let html = '';
+      channels.forEach(ch => {
+        const name = ch.name || 'Unnamed';
+        const url = ch.url || '#';
+        const desc = ch.description || 'Join this Telegram channel for updates & community.';
+        const displayUrl = formatJoinUrl(url);
+        const safeName = escapeHtml(name);
+        const safeDesc = escapeHtml(desc);
+        const safeRawUrl = escapeHtml(url);
+        
+        // detect if it looks like a private invite to show badge
+        const isPrivateInvite = url.includes('/joinchat/') || url.includes('/+') || url.includes('/c/');
+        
+        html += `
+          <div class="channel-card" data-id="${ch.id}">
+            <div class="card-icon">
+              <i class="fab fa-telegram-plane"></i>
+            </div>
+            <div class="card-content">
+              <div class="channel-name">
+                ${safeName}
+                ${isPrivateInvite ? '<span class="badge-private"><i class="fas fa-lock"></i> Private invite</span>' : ''}
+              </div>
+              <p class="channel-desc">${safeDesc}</p>
+              <div class="channel-meta">
+                <i class="fas fa-link"></i> <span>${safeRawUrl.length > 40 ? safeRawUrl.substring(0, 37) + '...' : safeRawUrl}</span>
+              </div>
+            </div>
+            <div class="card-actions">
+              <a href="${displayUrl}" target="_blank" rel="noopener noreferrer" class="join-btn"><i class="fab fa-telegram"></i> Join Channel</a>
+              <button class="edit-btn" data-id="${ch.id}" data-name="${safeName.replace(/&/g, '&amp;')}" data-url="${escapeHtml(url)}" data-desc="${escapeHtml(desc)}"><i class="fas fa-edit"></i></button>
+              <button class="delete-btn" data-id="${ch.id}"><i class="fas fa-trash-alt"></i></button>
+            </div>
+          </div>
+        `;
+      });
+      
+      channelListDiv.innerHTML = html;
+      
+      // Attach event listeners
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const name = btn.dataset.name;
+          const url = btn.dataset.url;
+          const desc = btn.dataset.desc;
+          enableEditMode(id, name, url, desc);
+        });
+      });
+      
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          if (confirm("Remove this channel from directory?")) {
+            await deleteChannelById(id);
+          }
+        });
+      });
+      
+    } catch (error) {
+      console.error("Render error:", error);
+      channelListDiv.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Error loading channels</h3><p>${error.message}. Check Firebase rules (allow read/write).</p></div>`;
+      showToast("Firestore error: " + error.message, true);
+    }
+  }
+  
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+  
+  // Add or update channel with relaxed validation
+  async function addOrUpdateChannel() {
+    const name = channelNameInput.value.trim();
+    let url = channelUrlInput.value.trim();
+    const description = channelDescInput.value.trim();
+    
+    if (!name) {
+      showToast("Channel name is required", true);
+      return false;
+    }
+    if (!url) {
+      showToast("Telegram link is required", true);
+      return false;
+    }
+    
+    // NEW: Accept private channel links (joinchat, +invite, etc)
+    if (!isValidTelegramLink(url)) {
+      showToast("❌ Invalid Telegram link. Use formats: t.me/username , t.me/joinchat/xxxx , t.me/+invite , or https://t.me/... (Private links are now supported!)", true);
+      return false;
+    }
+    
+    try {
+      if (editMode && editDocId) {
+        const channelRef = doc(db, "telegramChannels", editDocId);
+        await updateDoc(channelRef, {
+          name: name,
+          url: url,
+          description: description || "Join our Telegram channel for exclusive content",
+          updatedAt: new Date().toISOString()
+        });
+        showToast("Channel updated successfully! ✅");
+      } else {
+        await addDoc(channelsCollection, {
+          name: name,
+          url: url,
+          description: description || "Join telegram channel for updates",
+          createdAt: new Date().toISOString()
+        });
+        showToast("New channel added! 🚀 (Private links accepted)");
+      }
+      resetForm();
+      await renderChannels();
+      return true;
+    } catch (err) {
+      console.error("Submit error:", err);
+      showToast("Failed: " + err.message, true);
+      return false;
+    }
+  }
+  
+  async function deleteChannelById(docId) {
+    try {
+      const channelRef = doc(db, "telegramChannels", docId);
+      await deleteDoc(channelRef);
+      showToast("Channel removed from directory");
+      await renderChannels();
+    } catch (err) {
+      console.error(err);
+      showToast("Delete failed: " + err.message, true);
+    }
+  }
+  
+  function enableEditMode(id, name, url, desc) {
+    editMode = true;
+    editDocId = id;
+    channelNameInput.value = name;
+    channelUrlInput.value = url;
+    channelDescInput.value = desc;
+    submitBtn.innerHTML = '<i class="fas fa-pen-fancy"></i> Update Channel';
+    formTitle.innerHTML = '<i class="fas fa-edit"></i> Edit Telegram Channel';
+    cancelEditBtn.style.display = 'inline-flex';
+    document.getElementById('addChannelSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  
+  function resetForm() {
+    editMode = false;
+    editDocId = null;
+    channelNameInput.value = '';
+    channelUrlInput.value = '';
+    channelDescInput.value = '';
+    submitBtn.innerHTML = '<i class="fas fa-save"></i> Add Channel';
+    formTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Manage Channel';
+    cancelEditBtn.style.display = 'none';
+  }
+  
+  const addForm = document.getElementById('addChannelForm');
+  addForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await addOrUpdateChannel();
+  });
+  
+  cancelEditBtn.addEventListener('click', () => {
+    resetForm();
+  });
+  
+  // Initial load
+  renderChannels().catch(e => console.warn(e));
+</script>
 </body>
-</html>
+    </html>
