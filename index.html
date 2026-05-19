@@ -1,1458 +1,868 @@
-import React, { useState, useRef, useEffect } from 'react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Canva Graphics Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;700;800;900&family=Archivo+Black&family=Anton&family=Playfair+Display:wght@400;700;900&family=Space+Grotesk:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#090D16;--panel:#0F1626;--panel2:#141B2D;--border:#1e2a40;
+  --text:#f1f5f9;--muted:#64748b;--accent:#6366f1;--accent2:#06b6d4;
+  --green:#10b981;--red:#ef4444;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif}
+button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit}
+input,select,textarea{font-family:inherit;color:inherit}
+select option{background:#1e293b}
 
-// Theme Presets for One-Click Branding
-const PRESETS = [
-  {
-    id: 'midnight-obsidian',
-    name: 'Midnight Obsidian',
-    description: 'Tech & AI (Modern Dark Mode)',
-    bg: '#0E111A',
-    card: '#1B2234',
-    text: '#F3F4F6',
-    textMuted: '#9CA3AF',
-    accent: '#10B981', // Neon Mint
-    fontHeader: 'League Spartan',
-    fontBody: 'Inter'
-  },
-  {
-    id: 'warm-latte',
-    name: 'Warm Latte',
-    description: 'Aesthetic, Minimalist, Lifestyle',
-    bg: '#FAF7F2',
-    card: '#F0E9DC',
-    text: '#2D2722',
-    textMuted: '#7A7067',
-    accent: '#B45309', // Caramel Amber
-    fontHeader: 'Playfair Display',
-    fontBody: 'Montserrat'
-  },
-  {
-    id: 'wealth-navy',
-    name: 'Wealth Navy',
-    description: 'Finance, Business, Crypto',
-    bg: '#0B132B',
-    card: '#1C2541',
-    text: '#FFFFFF',
-    textMuted: '#8D99AE',
-    accent: '#F5A623', // Warm Gold
-    fontHeader: 'Archivo Black',
-    fontBody: 'Inter'
-  },
-  {
-    id: 'coral-energy',
-    name: 'Coral Energy',
-    description: 'Fitness, High Impact, Creators',
-    bg: '#0A0A0A',
-    card: '#1A1A1A',
-    text: '#FFFFFF',
-    textMuted: '#A3A3A3',
-    accent: '#FF4757', // Radiant Coral
-    fontHeader: 'Anton',
-    fontBody: 'Plus Jakarta Sans'
-  },
-  {
-    id: 'lavender-editorial',
-    name: 'Lavender Editorial',
-    description: 'Creative, High Fashion, Design',
-    bg: '#F5F3FF',
-    card: '#EDE9FE',
-    text: '#1E1B4B',
-    textMuted: '#6D28D9',
-    accent: '#EC4899', // Vivid Pink
-    fontHeader: 'Playfair Display',
-    fontBody: 'Plus Jakarta Sans'
-  }
-];
+/* Layout */
+#app{display:flex;flex-direction:column;height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;z-index:10}
+.header-logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(99,102,241,.3)}
+.logo-icon svg{width:22px;height:22px;color:#fff;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.header-title{font-size:14px;font-weight:800;letter-spacing:.5px;background:linear-gradient(90deg,#fff,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.badge-premium{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;padding:2px 7px;border-radius:999px;-webkit-text-fill-color:#fff}
+.view-toggle{display:flex;background:#192132;border-radius:12px;padding:4px;border:1px solid var(--border);gap:2px}
+.view-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;transition:.2s;color:var(--muted)}
+.view-btn.active{background:var(--accent);color:#fff}
+.view-btn:hover:not(.active){color:#fff}
+.view-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-// Available Google Fonts (We inject stylesheet links in useEffect)
-const FONTS = {
-  header: [
-    { value: 'League Spartan', name: 'League Spartan (Bold, Tech)' },
-    { value: 'Archivo Black', name: 'Archivo Black (Heavy, Modern)' },
-    { value: 'Anton', name: 'Anton (Impact, Fitness)' },
-    { value: 'Playfair Display', name: 'Playfair Display (Premium, Elegant)' },
-    { value: 'Space Grotesk', name: 'Space Grotesk (Sci-Fi, Creator)' },
-    { value: 'Plus Jakarta Sans', name: 'Plus Jakarta (Minimalist)' }
-  ],
-  body: [
-    { value: 'Inter', name: 'Inter (Sleek & Professional)' },
-    { value: 'Montserrat', name: 'Montserrat (Modern Geometric)' },
-    { value: 'Plus Jakarta Sans', name: 'Plus Jakarta Sans (Premium Clean)' },
-    { value: 'Space Grotesk', name: 'Space Grotesk (Stylized)' }
-  ]
-};
+/* Main */
+.main{display:flex;flex:1;overflow:hidden}
 
-export default function App() {
-  // Global Template Customization States
-  const [activePreset, setActivePreset] = useState(PRESETS[0]);
-  const [themeColors, setThemeColors] = useState({
-    bg: PRESETS[0].bg,
-    card: PRESETS[0].card,
-    text: PRESETS[0].text,
-    textMuted: PRESETS[0].textMuted,
-    accent: PRESETS[0].accent,
-  });
-  const [fonts, setFonts] = useState({
-    header: PRESETS[0].fontHeader,
-    body: PRESETS[0].fontBody
-  });
+/* Sidebar */
+aside{width:360px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;position:sticky;top:0;background:var(--panel);z-index:5}
+.tab-btn{flex:1;padding:12px 4px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;transition:.2s;border-bottom:2px solid transparent;color:var(--muted)}
+.tab-btn.active{border-color:var(--accent);color:var(--text);background:#161F32}
+.tab-btn:hover:not(.active){color:#fff}
+.panel-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px}
+.panel-body::-webkit-scrollbar{width:4px}
+.panel-body::-webkit-scrollbar-track{background:transparent}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 
-  // Global Content States
-  const [branding, setBranding] = useState({
-    tag: 'AI & SAAS WORKFLOWS',
-    author: 'Aarav Sharma',
-    handle: '@aarav_tech',
-  });
+/* Controls */
+.section-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+.one-click-badge{font-size:9px;background:#1e2a40;color:var(--accent);padding:2px 7px;border-radius:4px;font-weight:700}
+.label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.preset-btn{width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:#151D2E;text-align:left;transition:.2s;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.preset-btn.active{border-color:var(--accent);background:rgba(99,102,241,.08)}
+.preset-btn:hover:not(.active){background:#1c2741}
+.preset-name{font-size:12px;font-weight:700;color:var(--text)}
+.preset-desc{font-size:10px;color:var(--muted);margin-top:1px}
+.color-dots{display:flex;gap:4px}
+.dot{width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.15)}
+.divider{border:none;border-top:1px solid var(--border);margin:4px 0}
+.color-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.color-field label{font-size:10px;color:var(--muted);display:block;margin-bottom:5px}
+.color-row{display:flex;align-items:center;gap:8px;background:rgba(15,22,38,.6);padding:8px;border-radius:8px;border:1px solid var(--border)}
+.color-row input[type=color]{width:24px;height:24px;border:none;border-radius:4px;cursor:pointer;background:transparent;padding:0;flex-shrink:0}
+.color-row span{font-size:10px;font-family:monospace;text-transform:uppercase;color:#cbd5e1}
+select.font-select{width:100%;background:#0f172a;border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:11px;color:var(--text);outline:none;transition:.2s}
+select.font-select:focus{border-color:var(--accent)}
+.field label{font-size:10px;color:var(--muted);display:block;margin-bottom:5px}
+input.inp,textarea.inp{width:100%;background:#020617;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:11px;color:var(--text);outline:none;resize:none;transition:.2s}
+input.inp:focus,textarea.inp:focus{border-color:var(--accent)}
+.slide-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.slide-tabs::-webkit-scrollbar{height:2px}
+.slide-tabs::-webkit-scrollbar-thumb{background:var(--border)}
+.stab{padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;flex-shrink:0;transition:.2s;border:1px solid var(--border);color:var(--muted);background:#0f172a}
+.stab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.stab:hover:not(.active){color:#fff}
+.slide-editor-box{background:rgba(15,23,42,.5);border:1px solid rgba(30,42,64,.6);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.slide-editor-title{font-size:11px;font-weight:700;color:#cbd5e1}
+.step-box{background:#0f172a;border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.step-label{font-size:9px;font-weight:700;color:var(--accent);text-transform:uppercase}
+.step-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 
-  const [slidesContent, setSlidesContent] = useState([
-    {
-      id: 1,
-      title: '3 AI Tools You Are Using Wrong.',
-      accentWord: 'Wrong.',
-      desc: 'Thousands of founders waste 10+ hours weekly doing this the manual way. Here is how to fix it immediately.',
-      badge: 'PRO TIPS'
-    },
-    {
-      id: 2,
-      wrongTitle: 'THE MANUAL WAY',
-      wrongText: 'Copy-pasting ChatGPT outputs directly without formatting or tone correction.',
-      rightTitle: 'THE EXPERT WAY',
-      rightText: 'Use system prompts to enforce formatting, structural constraints, and clean voice outputs.',
-      statLabel: 'TIME SAVED: 80%'
-    },
-    {
-      id: 3,
-      tweetText: 'Building in public is not about showing daily graphs. It’s about letting your users inside your development struggles, errors, and key breakthroughs. That builds unbreakable organic trust.',
-      likes: '4,821',
-      retweets: '842'
-    },
-    {
-      id: 4,
-      steps: [
-        { num: '01', title: 'Define the prompt goal', body: 'Break down your automation task into micro-agents.' },
-        { num: '02', title: 'Setup the Context', body: 'Feed target guidelines, formatting limits and example data.' },
-        { num: '03', title: 'Chain multiple runs', body: 'Pass results from previous step directly into the next API.' }
-      ]
-    },
-    {
-      id: 5,
-      bigStat: '92%',
-      statDesc: 'of modern creators struggle with consistency, not skill. Systemizing your assets solves this instantly.',
-      progressVal: 92
-    },
-    {
-      id: 6,
-      ctaTitle: 'Ready to build high-converting bundles?',
-      ctaButton: 'Grab My Free Asset Kit',
-      ctaSteps: ['✓ Save this post for later', '✓ Tag a designer in comments', '✓ Click link in bio to copy templates']
-    }
-  ]);
+/* Canva tab */
+.hex-row{display:flex;justify-content:space-between;align-items:center;background:#151D2E;padding:10px 14px;border-radius:12px;border:1px solid var(--border)}
+.hex-info{display:flex;align-items:center;gap:8px}
+.hex-swatch{width:20px;height:20px;border-radius:4px;border:1px solid rgba(255,255,255,.1);flex-shrink:0}
+.hex-label{font-size:12px;font-weight:700;color:var(--text)}
+.copy-btn{font-size:10px;background:#1e2a40;color:var(--accent);padding:4px 8px;border-radius:4px;border:1px solid var(--border);font-weight:700;transition:.2s}
+.copy-btn:hover{background:#263347;color:#a5b4fc}
+.canva-guide{background:rgba(26,37,62,.4);border:1px solid rgba(43,63,103,.4);border-radius:12px;padding:14px}
+.canva-guide h4{font-size:11px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.canva-guide ul{list-style:disc;padding-left:16px;display:flex;flex-direction:column;gap:8px}
+.canva-guide li{font-size:11px;color:var(--muted);line-height:1.5}
+.canva-guide strong{color:var(--text)}
+.canva-guide .hl{color:var(--accent)}
 
-  const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'edit-focus'
-  const [activeTab, setActiveTab] = useState('design'); // 'design' | 'content' | 'canva'
-  const [copiedColor, setCopiedColor] = useState(null);
+/* Sidebar actions */
+.sidebar-actions{padding:14px;background:var(--panel2);border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.btn-primary{width:100%;background:linear-gradient(135deg,var(--accent),#4f46e5);color:#fff;font-weight:700;padding:10px 16px;border-radius:12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s;box-shadow:0 4px 12px rgba(99,102,241,.3)}
+.btn-primary:hover{opacity:.9}
+.btn-secondary{width:100%;background:#0f172a;color:#cbd5e1;font-weight:700;padding:8px 16px;border-radius:12px;font-size:11px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s}
+.btn-secondary:hover{background:#1e293b}
+.btn-svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 
-  // Load Google Fonts Dynamically
-  useEffect(() => {
-    const linkId = 'google-fonts-link';
-    let link = document.getElementById(linkId);
-    if (!link) {
-      link = document.createElement('link');
-      link.id = linkId;
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
-    }
-    const fontNames = [
-      'League Spartan', 'Archivo Black', 'Anton',
-      'Playfair Display', 'Space Grotesk', 'Inter',
-      'Montserrat', 'Plus Jakarta Sans'
-    ];
-    const query = fontNames.map(f => `family=${f.replace(/ /g, '+')}:wght@400;700;800;900`).join('&');
-    link.href = `https://fonts.googleapis.com/css2?${query}&display=swap`;
-  }, []);
+/* Canvas area */
+main{flex:1;background:var(--bg);overflow-y:auto;padding:28px;display:flex;flex-direction:column;align-items:center}
+.canvas-header{width:100%;max-width:960px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-shrink:0}
+.canvas-title{font-size:16px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px}
+.canvas-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.nav-controls{display:flex;align-items:center;gap:8px}
+.nav-btn{padding:7px 12px;border-radius:8px;background:#1e293b;border:1px solid var(--border);font-size:11px;font-weight:700;color:#cbd5e1;transition:.2s}
+.nav-btn:hover{background:#263347}
+.slide-counter{padding:7px 14px;background:#121927;border:1px solid var(--border);border-radius:8px;font-size:11px;font-weight:700;color:#94a3b8}
 
-  const handleApplyPreset = (preset) => {
-    setActivePreset(preset);
-    setThemeColors({
-      bg: preset.bg,
-      card: preset.card,
-      text: preset.text,
-      textMuted: preset.textMuted,
-      accent: preset.accent,
-    });
-    setFonts({
-      header: preset.fontHeader,
-      body: preset.fontBody
-    });
-    showNotification(`Applied "${preset.name}" styling!`);
-  };
+/* Grid */
+.grid-view{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;width:100%;max-width:960px}
+.grid-card{background:var(--panel);border-radius:16px;padding:10px;border:1px solid var(--border);display:flex;flex-direction:column;gap:8px;transition:.2s}
+.grid-card.selected{border-color:var(--accent);box-shadow:0 0 24px rgba(99,102,241,.15)}
+.grid-card:hover:not(.selected){border-color:#334155}
+.grid-card-top{display:flex;justify-content:space-between;align-items:center;padding:0 4px}
+.slide-type{font-size:10px;font-weight:700;color:var(--accent)}
+.card-actions{display:flex;gap:6px}
+.card-btn{padding:3px 8px;border-radius:6px;font-size:9px;font-weight:700;transition:.2s}
+.card-btn-edit{background:#1e293b;color:#94a3b8}
+.card-btn-edit:hover{background:#263347;color:#fff}
+.card-btn-png{background:rgba(99,102,241,.15);color:var(--accent)}
+.card-btn-png:hover{background:rgba(99,102,241,.3)}
+.slide-frame{aspect-ratio:4/5;border-radius:10px;overflow:hidden;border:1px solid #0f172a;background:#020617}
+.slide-frame svg{width:100%;height:100%;display:block}
 
-  const handleColorChange = (key, value) => {
-    setThemeColors(prev => ({ ...prev, [key]: value }));
-  };
+/* Focus view */
+.focus-view{width:100%;max-width:540px;display:flex;flex-direction:column;gap:16px}
+.focus-frame{aspect-ratio:4/5;border-radius:16px;overflow:hidden;border:1px solid var(--border);background:#020617;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.focus-frame svg{width:100%;height:100%;display:block}
+.focus-actions{display:flex;gap:10px}
+.focus-btn-primary{flex:1;background:linear-gradient(135deg,var(--accent),#4f46e5);color:#fff;font-weight:700;padding:12px;border-radius:12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s}
+.focus-btn-primary:hover{opacity:.9}
+.focus-btn-secondary{background:#1e293b;border:1px solid var(--border);color:#cbd5e1;font-weight:700;padding:12px 16px;border-radius:12px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s}
+.focus-btn-secondary:hover{background:#263347}
 
-  const updateSlideContent = (index, field, value) => {
-    const newContent = [...slidesContent];
-    newContent[index] = { ...newContent[index], [field]: value };
-    setSlidesContent(newContent);
-  };
+/* Toast */
+#toast{position:fixed;bottom:24px;right:24px;background:#161F32;border:1px solid rgba(99,102,241,.3);color:var(--text);padding:12px 22px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;align-items:center;gap:10px;z-index:100;font-size:12px;font-weight:700;transition:opacity .3s,transform .3s;opacity:0;transform:translateY(10px);pointer-events:none}
+#toast.show{opacity:1;transform:translateY(0)}
+.toast-dot{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0}
 
-  const updateStepContent = (slideIndex, stepIndex, field, value) => {
-    const newContent = [...slidesContent];
-    const steps = [...newContent[slideIndex].steps];
-    steps[stepIndex] = { ...steps[stepIndex], [field]: value };
-    newContent[slideIndex] = { ...newContent[slideIndex], steps };
-    setSlidesContent(newContent);
-  };
+/* Scrollbar */
+main::-webkit-scrollbar{width:4px}
+main::-webkit-scrollbar-track{background:transparent}
+main::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 
-  const copyToClipboard = (text, type = 'Hex') => {
-    navigator.clipboard.writeText(text);
-    setCopiedColor(text);
-    setTimeout(() => setCopiedColor(null), 2000);
-    showNotification(`${type} copied to clipboard!`);
-  };
+/* Hidden tab panels */
+.tab-panel{display:none}
+.tab-panel.active{display:contents}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- HEADER -->
+  <header>
+    <div class="header-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="header-title">CANVA GRAPHICS STUDIO</span>
+          <span class="badge-premium">Premium Builder</span>
+        </div>
+        <div class="header-sub">Design & Export Social Media Bundle Kits Instantly</div>
+      </div>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-grid" onclick="setView('grid')">
+        <svg viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"/></svg>
+        Kit Grid
+      </button>
+      <button class="view-btn" id="btn-focus" onclick="setView('focus')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        Focus Studio
+      </button>
+    </div>
+  </header>
 
-  const [notification, setNotification] = useState(null);
-  const showNotification = (msg) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 3000);
-  };
+  <div class="main">
+    <!-- SIDEBAR -->
+    <aside>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="setTab('design')">🎨 Style</button>
+        <button class="tab-btn" onclick="setTab('content')">✍️ Content</button>
+        <button class="tab-btn" onclick="setTab('canva')">🔵 Canva</button>
+      </div>
 
-  // SVG Export Utility
-  const downloadSlideAsSVG = (index) => {
-    const svgElement = document.getElementById(`svg-slide-${index}`);
-    if (!svgElement) {
-      showNotification('Template element not found', 'error');
-      return;
-    }
-    const svgString = new XMLSerializer().serializeToString(svgElement);
-    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const svgUrl = URL.createObjectURL(svgBlob);
-    
-    const downloadLink = document.createElement('a');
-    downloadLink.href = svgUrl;
-    downloadLink.download = `Slide-${index + 1}-${branding.tag.replace(/\s+/g, '-')}.svg`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-    showNotification(`Slide ${index + 1} downloaded as crisp SVG!`);
-  };
+      <div class="panel-body" id="panel-body">
 
-  // PNG Export Utility using Canvas
-  const downloadSlideAsPNG = (index) => {
-    const svgElement = document.getElementById(`svg-slide-${index}`);
-    if (!svgElement) return;
-
-    showNotification("Rendering high-res PNG...");
-    const svgString = new XMLSerializer().serializeToString(svgElement);
-    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const URL = window.URL || window.webkitURL || window;
-    const blobURL = URL.createObjectURL(svgBlob);
-    
-    const image = new Image();
-    image.onload = () => {
-      const canvas = document.createElement('canvas');
-      // Export size optimized for portrait Instagram feed (1080 x 1350)
-      canvas.width = 1080;
-      canvas.height = 1350;
-      const context = canvas.getContext('2d');
-      context.drawImage(image, 0, 0, 1080, 1350);
-      
-      const pngURL = canvas.toDataURL('image/png');
-      const downloadLink = document.createElement('a');
-      downloadLink.href = pngURL;
-      downloadLink.download = `Canva-Ready-Slide-${index + 1}.png`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      showNotification(`Ready! PNG downloaded successfully.`);
-    };
-    image.src = blobURL;
-  };
-
-  return (
-    <div className="flex flex-col h-screen w-full bg-[#090D16] text-slate-100 overflow-hidden font-['Plus_Jakarta_Sans']">
-      
-      {/* Header Bar */}
-      <header className="flex justify-between items-center px-6 py-4 bg-[#0F1626] border-b border-slate-800 shrink-0 z-10">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-            </svg>
-          </div>
+        <!-- DESIGN TAB -->
+        <div class="tab-panel active" id="tab-design">
           <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">CANVA GRAPHICS STUDIO</span>
-              <span className="bg-gradient-to-r from-indigo-500 to-cyan-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Premium Builder</span>
+            <div class="label-row"><span class="section-label">Branding Presets</span><span class="one-click-badge">1-Click</span></div>
+            <div id="preset-list"></div>
+          </div>
+
+          <hr class="divider"/>
+
+          <div>
+            <div class="label-row" style="margin-bottom:12px"><span class="section-label">Custom Color Controls</span></div>
+            <div class="color-grid">
+              <div class="color-field"><label>Canvas Background</label><div class="color-row"><input type="color" id="c-bg" oninput="updateColor('bg',this.value)"><span id="c-bg-val"></span></div></div>
+              <div class="color-field"><label>Accent Element</label><div class="color-row"><input type="color" id="c-accent" oninput="updateColor('accent',this.value)"><span id="c-accent-val"></span></div></div>
+              <div class="color-field"><label>Card Background</label><div class="color-row"><input type="color" id="c-card" oninput="updateColor('card',this.value)"><span id="c-card-val"></span></div></div>
+              <div class="color-field"><label>Primary Text</label><div class="color-row"><input type="color" id="c-text" oninput="updateColor('text',this.value)"><span id="c-text-val"></span></div></div>
             </div>
-            <p className="text-xs text-slate-400 font-medium">Design & Export Social Media Bundle Kits Instantly</p>
+          </div>
+
+          <hr class="divider"/>
+
+          <div>
+            <div class="label-row" style="margin-bottom:12px"><span class="section-label">Typography Engines</span></div>
+            <div class="field" style="margin-bottom:10px">
+              <label>Header Font (Display & Headlines)</label>
+              <select class="font-select" id="font-header" onchange="updateFont('header',this.value)">
+                <option value="League Spartan">League Spartan (Bold, Tech)</option>
+                <option value="Archivo Black">Archivo Black (Heavy, Modern)</option>
+                <option value="Anton">Anton (Impact, Fitness)</option>
+                <option value="Playfair Display">Playfair Display (Premium, Elegant)</option>
+                <option value="Space Grotesk">Space Grotesk (Sci-Fi, Creator)</option>
+                <option value="Plus Jakarta Sans">Plus Jakarta (Minimalist)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Body Text Font</label>
+              <select class="font-select" id="font-body" onchange="updateFont('body',this.value)">
+                <option value="Plus Jakarta Sans">Plus Jakarta Sans (Premium Clean)</option>
+                <option value="Montserrat">Montserrat (Modern Geometric)</option>
+                <option value="Space Grotesk">Space Grotesk (Stylized)</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <div className="flex bg-[#192132] rounded-xl p-1 border border-slate-700">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'grid' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
-              </svg>
-              <span>Kit Grid</span>
-            </button>
-            <button
-              onClick={() => setViewMode('edit-focus')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'edit-focus' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <span>Focus Studio</span>
-            </button>
+        <!-- CONTENT TAB -->
+        <div class="tab-panel" id="tab-content">
+          <div style="background:#131B2E;border:1px solid rgba(30,42,64,.8);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px">
+            <span class="section-label">Global Header & Brand Info</span>
+            <div class="field"><label>Niche Category Tag</label><input class="inp" id="brand-tag" oninput="updateBrand('tag',this.value)"/></div>
+            <div class="step-grid">
+              <div class="field"><label>Author Name</label><input class="inp" id="brand-author" oninput="updateBrand('author',this.value)"/></div>
+              <div class="field"><label>Social Handle</label><input class="inp" id="brand-handle" oninput="updateBrand('handle',this.value)"/></div>
+            </div>
+          </div>
+
+          <hr class="divider"/>
+
+          <div>
+            <div class="label-row" style="margin-bottom:10px">
+              <span class="section-label">Slide Editor</span>
+              <span style="font-size:10px;color:var(--accent);font-weight:700" id="slide-counter-label">Slide 1 of 6</span>
+            </div>
+            <div class="slide-tabs" id="slide-tabs"></div>
+            <div class="slide-editor-box" id="slide-editor" style="margin-top:12px"></div>
           </div>
         </div>
-      </header>
 
-      {/* Main Container */}
-      <div className="flex flex-1 overflow-hidden w-full">
-        
-        {/* Left Interactive Control Panel */}
-        <aside className="w-80 md:w-[400px] shrink-0 bg-[#0F1626] border-r border-slate-800 flex flex-col overflow-y-auto">
-          
-          {/* Navigation Tabs */}
-          <div className="flex border-b border-slate-800 sticky top-0 bg-[#0F1626] z-10">
-            <button 
-              onClick={() => setActiveTab('design')}
-              className={`flex-1 py-3 text-center text-xs font-bold tracking-wider uppercase transition-all border-b-2 ${activeTab === 'design' ? 'border-indigo-500 text-slate-100 bg-[#161F32]' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-900/40'}`}
-            >
-              🎨 Style
-            </button>
-            <button 
-              onClick={() => setActiveTab('content')}
-              className={`flex-1 py-3 text-center text-xs font-bold tracking-wider uppercase transition-all border-b-2 ${activeTab === 'content' ? 'border-indigo-500 text-slate-100 bg-[#161F32]' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-900/40'}`}
-            >
-              ✍️ Content
-            </button>
-            <button 
-              onClick={() => setActiveTab('canva')}
-              className={`flex-1 py-3 text-center text-xs font-bold tracking-wider uppercase transition-all border-b-2 ${activeTab === 'canva' ? 'border-indigo-500 text-slate-100 bg-[#161F32]' : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-900/40'}`}
-            >
-              🔵 Canva Integration
-            </button>
+        <!-- CANVA TAB -->
+        <div class="tab-panel" id="tab-canva">
+          <span class="section-label">Canva Palette Exporter</span>
+          <p style="font-size:11px;color:var(--muted);line-height:1.6;margin-top:6px">Use these ready-to-copy Hex values in your Canva brand kit for seamless matching:</p>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+            <div class="hex-row"><div class="hex-info"><span class="hex-swatch" id="swatch-bg"></span><span class="hex-label">Background Color</span></div><button class="copy-btn" id="copy-bg" onclick="copyHex('bg')"></button></div>
+            <div class="hex-row"><div class="hex-info"><span class="hex-swatch" id="swatch-accent"></span><span class="hex-label">Accent Highlight</span></div><button class="copy-btn" id="copy-accent" onclick="copyHex('accent')"></button></div>
+            <div class="hex-row"><div class="hex-info"><span class="hex-swatch" id="swatch-card"></span><span class="hex-label">Box/Card Color</span></div><button class="copy-btn" id="copy-card" onclick="copyHex('card')"></button></div>
+            <div class="hex-row"><div class="hex-info"><span class="hex-swatch" id="swatch-text"></span><span class="hex-label">Primary Text</span></div><button class="copy-btn" id="copy-text" onclick="copyHex('text')"></button></div>
           </div>
-
-          <div className="p-6 flex-1 space-y-6">
-
-            {/* DESIGN TAB VIEW */}
-            {activeTab === 'design' && (
-              <>
-                {/* Brand Preset Selector */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-extrabold tracking-widest text-slate-400 uppercase">Branding Presets</span>
-                    <span className="text-[10px] bg-slate-800 text-indigo-400 px-2 py-0.5 rounded font-bold">1-Click</span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {PRESETS.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => handleApplyPreset(p)}
-                        className={`p-3 rounded-xl border text-left transition-all flex justify-between items-center ${activePreset.id === p.id ? 'border-indigo-500 bg-indigo-950/20' : 'border-slate-800 bg-[#151D2E] hover:bg-slate-800/80'}`}
-                      >
-                        <div>
-                          <p className="text-xs font-bold text-slate-200">{p.name}</p>
-                          <p className="text-[10px] text-slate-400">{p.description}</p>
-                        </div>
-                        <div className="flex space-x-1">
-                          <span className="w-2.5 h-2.5 rounded-full border border-slate-700" style={{ backgroundColor: p.bg }}></span>
-                          <span className="w-2.5 h-2.5 rounded-full border border-slate-700" style={{ backgroundColor: p.card }}></span>
-                          <span className="w-2.5 h-2.5 rounded-full border border-slate-700" style={{ backgroundColor: p.accent }}></span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Fine-tune Colors */}
-                <div className="border-t border-slate-800 pt-5 space-y-4">
-                  <span className="text-xs font-extrabold tracking-widest text-slate-400 uppercase block">Custom Color Controls</span>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] text-slate-400 block mb-1">Canvas Background</label>
-                      <div className="flex items-center space-x-1.5 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                        <input 
-                          type="color" 
-                          value={themeColors.bg} 
-                          onChange={(e) => handleColorChange('bg', e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent shrink-0"
-                        />
-                        <span className="text-[10px] font-mono uppercase text-slate-300">{themeColors.bg}</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] text-slate-400 block mb-1">Accent Element Color</label>
-                      <div className="flex items-center space-x-1.5 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                        <input 
-                          type="color" 
-                          value={themeColors.accent} 
-                          onChange={(e) => handleColorChange('accent', e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent shrink-0"
-                        />
-                        <span className="text-[10px] font-mono uppercase text-slate-300">{themeColors.accent}</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] text-slate-400 block mb-1">Card Box Background</label>
-                      <div className="flex items-center space-x-1.5 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                        <input 
-                          type="color" 
-                          value={themeColors.card} 
-                          onChange={(e) => handleColorChange('card', e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent shrink-0"
-                        />
-                        <span className="text-[10px] font-mono uppercase text-slate-300">{themeColors.card}</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] text-slate-400 block mb-1">Primary Text Color</label>
-                      <div className="flex items-center space-x-1.5 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                        <input 
-                          type="color" 
-                          value={themeColors.text} 
-                          onChange={(e) => handleColorChange('text', e.target.value)}
-                          className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent shrink-0"
-                        />
-                        <span className="text-[10px] font-mono uppercase text-slate-300">{themeColors.text}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Typography Engine */}
-                <div className="border-t border-slate-800 pt-5 space-y-4">
-                  <span className="text-xs font-extrabold tracking-widest text-slate-400 uppercase block">Typography Engines</span>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-[10px] text-slate-400 block mb-1">Header Typography (Display & Headlines)</label>
-                      <select 
-                        value={fonts.header} 
-                        onChange={(e) => setFonts(prev => ({ ...prev, header: e.target.value }))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                      >
-                        {FONTS.header.map(f => (
-                          <option key={f.value} value={f.value}>{f.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] text-slate-400 block mb-1">Body Text Typography (High Legibility)</label>
-                      <select 
-                        value={fonts.body} 
-                        onChange={(e) => setFonts(prev => ({ ...prev, body: e.target.value }))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                      >
-                        {FONTS.body.map(f => (
-                          <option key={f.value} value={f.value}>{f.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* CONTENT TAB VIEW */}
-            {activeTab === 'content' && (
-              <>
-                {/* Universal Brand Info */}
-                <div className="space-y-3 bg-[#131B2E] p-4 rounded-xl border border-slate-800/80">
-                  <span className="text-xs font-extrabold tracking-wider text-slate-200 uppercase block mb-1">GLOBAL HEADER & BRAND INFO</span>
-                  <div>
-                    <label className="text-[9px] text-slate-400 block mb-1">Niche Category Tag</label>
-                    <input 
-                      type="text" 
-                      value={branding.tag}
-                      onChange={(e) => setBranding(prev => ({ ...prev, tag: e.target.value }))}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg py-1.5 px-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[9px] text-slate-400 block mb-1">Author Name</label>
-                      <input 
-                        type="text" 
-                        value={branding.author}
-                        onChange={(e) => setBranding(prev => ({ ...prev, author: e.target.value }))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg py-1.5 px-3 text-xs text-slate-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[9px] text-slate-400 block mb-1">Social Handle</label>
-                      <input 
-                        type="text" 
-                        value={branding.handle}
-                        onChange={(e) => setBranding(prev => ({ ...prev, handle: e.target.value }))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-lg py-1.5 px-3 text-xs text-slate-200"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Individual Slide Content Editor */}
-                <div className="border-t border-slate-800 pt-5 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-extrabold tracking-widest text-slate-400 uppercase">Slide Editor Selection</span>
-                    <span className="text-[10px] text-indigo-400 font-bold">Slide {selectedSlideIndex + 1} of 6</span>
-                  </div>
-
-                  <div className="flex space-x-1.5 overflow-x-auto pb-2">
-                    {slidesContent.map((s, idx) => (
-                      <button
-                        key={s.id}
-                        onClick={() => setSelectedSlideIndex(idx)}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold shrink-0 transition ${selectedSlideIndex === idx ? 'bg-indigo-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
-                      >
-                        Slide {s.id}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Contextual Editor Fields based on Selected Slide */}
-                  <div className="space-y-4 bg-slate-900/50 p-4 rounded-xl border border-slate-800/60">
-                    {selectedSlideIndex === 0 && (
-                      <>
-                        <span className="text-[11px] font-bold text-slate-300 block">SLIDE 1: HOOK CARD</span>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Hook Bold Headline</label>
-                          <textarea 
-                            value={slidesContent[0].title}
-                            onChange={(e) => updateSlideContent(0, 'title', e.target.value)}
-                            rows={3}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Keyword Highlight (Target Accent Color)</label>
-                          <input 
-                            type="text" 
-                            value={slidesContent[0].accentWord}
-                            onChange={(e) => updateSlideContent(0, 'accentWord', e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Subtext / Hook Summary Paragraph</label>
-                          <textarea 
-                            value={slidesContent[0].desc}
-                            onChange={(e) => updateSlideContent(0, 'desc', e.target.value)}
-                            rows={3}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:outline-none"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {selectedSlideIndex === 1 && (
-                      <>
-                        <span className="text-[11px] font-bold text-slate-300 block">SLIDE 2: CONTRAST / SPLIT COMPARISON</span>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Old Way Label</label>
-                          <input 
-                            type="text" 
-                            value={slidesContent[1].wrongTitle}
-                            onChange={(e) => updateSlideContent(1, 'wrongTitle', e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Old Way Bad Mistake Text</label>
-                          <textarea 
-                            value={slidesContent[1].wrongText}
-                            onChange={(e) => updateSlideContent(1, 'wrongText', e.target.value)}
-                            rows={2}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                          />
-                        </div>
-                        <hr className="border-slate-800" />
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">New Way Label</label>
-                          <input 
-                            type="text" 
-                            value={slidesContent[1].rightTitle}
-                            onChange={(e) => updateSlideContent(1, 'rightTitle', e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">New Way Smart Action Text</label>
-                          <textarea 
-                            value={slidesContent[1].rightText}
-                            onChange={(e) => updateSlideContent(1, 'rightText', e.target.value)}
-                            rows={2}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {selectedSlideIndex === 2 && (
-                      <>
-                        <span className="text-[11px] font-bold text-slate-300 block">SLIDE 3: SOCIAL MEDIA TWEET</span>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Tweet / Thread Quote Message</label>
-                          <textarea 
-                            value={slidesContent[2].tweetText}
-                            onChange={(e) => updateSlideContent(2, 'tweetText', e.target.value)}
-                            rows={5}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[9px] text-slate-400 block mb-1">Likes Metric</label>
-                            <input 
-                              type="text" 
-                              value={slidesContent[2].likes}
-                              onChange={(e) => updateSlideContent(2, 'likes', e.target.value)}
-                              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-xs text-slate-200"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[9px] text-slate-400 block mb-1">Retweets</label>
-                            <input 
-                              type="text" 
-                              value={slidesContent[2].retweets}
-                              onChange={(e) => updateSlideContent(2, 'retweets', e.target.value)}
-                              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-xs text-slate-200"
-                            />
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {selectedSlideIndex === 3 && (
-                      <>
-                        <span className="text-[11px] font-bold text-slate-300 block">SLIDE 4: STEP-BY-STEP CHECKLIST</span>
-                        {slidesContent[3].steps.map((st, sIdx) => (
-                          <div key={sIdx} className="space-y-1.5 p-2 bg-slate-950 rounded-lg border border-slate-800">
-                            <span className="text-[9px] font-bold text-indigo-400">Step {st.num}</span>
-                            <input 
-                              type="text" 
-                              value={st.title} 
-                              placeholder="Step title"
-                              onChange={(e) => updateStepContent(3, sIdx, 'title', e.target.value)}
-                              className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200"
-                            />
-                            <textarea 
-                              value={st.body} 
-                              placeholder="Step explanation text"
-                              onChange={(e) => updateStepContent(3, sIdx, 'body', e.target.value)}
-                              rows={2}
-                              className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-400"
-                            />
-                          </div>
-                        ))}
-                      </>
-                    )}
-
-                    {selectedSlideIndex === 4 && (
-                      <>
-                        <span className="text-[11px] font-bold text-slate-300 block">SLIDE 5: STATISTIC & CHART HOOK</span>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Highlight Metric (e.g. 92%)</label>
-                          <input 
-                            type="text" 
-                            value={slidesContent[4].bigStat}
-                            onChange={(e) => updateSlideContent(4, 'bigStat', e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Progress Value Percentage (0 - 100)</label>
-                          <input 
-                            type="number" 
-                            min="0"
-                            max="100"
-                            value={slidesContent[4].progressVal}
-                            onChange={(e) => updateSlideContent(4, 'progressVal', parseInt(e.target.value) || 0)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Metric Analysis Caption</label>
-                          <textarea 
-                            value={slidesContent[4].statDesc}
-                            onChange={(e) => updateSlideContent(4, 'statDesc', e.target.value)}
-                            rows={4}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {selectedSlideIndex === 5 && (
-                      <>
-                        <span className="text-[11px] font-bold text-slate-300 block">SLIDE 6: LEAD MAGNET CTA</span>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Main Outro / Closing Headline</label>
-                          <textarea 
-                            value={slidesContent[5].ctaTitle}
-                            onChange={(e) => updateSlideContent(5, 'ctaTitle', e.target.value)}
-                            rows={3}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Action Button Text</label>
-                          <input 
-                            type="text" 
-                            value={slidesContent[5].ctaButton}
-                            onChange={(e) => updateSlideContent(5, 'ctaButton', e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-slate-400 block mb-1">Steps List (Lines separated)</label>
-                          <p className="text-[9px] text-slate-500 mb-1">Type each checkmark item on a new line</p>
-                          <textarea 
-                            value={slidesContent[5].ctaSteps.join('\n')}
-                            onChange={(e) => updateSlideContent(5, 'ctaSteps', e.target.value.split('\n'))}
-                            rows={4}
-                            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200"
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* CANVA TAB VIEW */}
-            {activeTab === 'canva' && (
-              <div className="space-y-5">
-                <span className="text-xs font-extrabold tracking-widest text-slate-400 uppercase block">CANVA CODES & PALETTE EXPORTER</span>
-                
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Use these ready-to-copy Hex values in your Canva workspace's brand kit palette for seamless matching:
-                </p>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center bg-[#151D2E] p-3 rounded-xl border border-slate-800">
-                    <div className="flex items-center space-x-2">
-                      <span className="w-5 h-5 rounded border border-slate-700 block shrink-0" style={{ backgroundColor: themeColors.bg }}></span>
-                      <span className="text-xs font-bold text-slate-200">Background Color</span>
-                    </div>
-                    <button 
-                      onClick={() => copyToClipboard(themeColors.bg, 'Background Hex')}
-                      className="text-[10px] bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-indigo-300 font-bold py-1 px-2 rounded border border-slate-700"
-                    >
-                      {copiedColor === themeColors.bg ? 'Copied ✓' : themeColors.bg}
-                    </button>
-                  </div>
-
-                  <div className="flex justify-between items-center bg-[#151D2E] p-3 rounded-xl border border-slate-800">
-                    <div className="flex items-center space-x-2">
-                      <span className="w-5 h-5 rounded border border-slate-700 block shrink-0" style={{ backgroundColor: themeColors.accent }}></span>
-                      <span className="text-xs font-bold text-slate-200">Accent Highlight</span>
-                    </div>
-                    <button 
-                      onClick={() => copyToClipboard(themeColors.accent, 'Accent Hex')}
-                      className="text-[10px] bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-indigo-300 font-bold py-1 px-2 rounded border border-slate-700"
-                    >
-                      {copiedColor === themeColors.accent ? 'Copied ✓' : themeColors.accent}
-                    </button>
-                  </div>
-
-                  <div className="flex justify-between items-center bg-[#151D2E] p-3 rounded-xl border border-slate-800">
-                    <div className="flex items-center space-x-2">
-                      <span className="w-5 h-5 rounded border border-slate-700 block shrink-0" style={{ backgroundColor: themeColors.card }}></span>
-                      <span className="text-xs font-bold text-slate-200">Box/Card Color</span>
-                    </div>
-                    <button 
-                      onClick={() => copyToClipboard(themeColors.card, 'Card Hex')}
-                      className="text-[10px] bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-indigo-300 font-bold py-1 px-2 rounded border border-slate-700"
-                    >
-                      {copiedColor === themeColors.card ? 'Copied ✓' : themeColors.card}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-[#1A253E]/40 border border-[#2B3F67]/40 p-4 rounded-xl space-y-3">
-                  <h4 className="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
-                    <span className="text-indigo-400">⚡</span>
-                    <span>Direct Canva Integration Guide</span>
-                  </h4>
-                  <ul className="text-[11px] text-slate-400 space-y-2.5 list-disc pl-4 leading-relaxed">
-                    <li>Create an <strong>Instagram Portrait Design</strong> inside Canva (<span className="text-slate-300">1080 x 1350 px</span>).</li>
-                    <li>Add your brand fonts: <span className="text-indigo-400">{fonts.header}</span> for Headers and <span className="text-indigo-400">{fonts.body}</span> for body text.</li>
-                    <li>Export your custom content layouts from our Focus Studio as crisp SVG/PNG to quickly drag-and-drop as high production background assets in Canva.</li>
-                    <li><strong>Share as Template:</strong> In Canva, click <span className="text-slate-200">Share &rarr; Template Link</span>. Copy that link and paste it into the "Delivery Page Generator" modal in this application!</li>
-                  </ul>
-                </div>
-              </div>
-            )}
-
+          <div class="canva-guide">
+            <h4><span style="color:var(--accent)">⚡</span> Direct Canva Integration Guide</h4>
+            <ul>
+              <li>Create an <strong>Instagram Portrait Design</strong> inside Canva (<strong>1080 × 1350 px</strong>).</li>
+              <li>Add your brand fonts: <span class="hl" id="canva-font-header"></span> for Headers and <span class="hl" id="canva-font-body"></span> for body text.</li>
+              <li>Export slides from Focus Studio as crisp <strong>SVG/PNG</strong> and drag-and-drop into Canva as background assets.</li>
+              <li><strong>Share as Template:</strong> In Canva, click <strong>Share → Template Link</strong> and paste it into your Delivery Page Generator.</li>
+            </ul>
           </div>
-
-          {/* Quick Active Actions */}
-          <div className="p-4 bg-[#141B2D] border-t border-slate-800 sticky bottom-0 shrink-0 flex flex-col space-y-2">
-            <button 
-              onClick={() => downloadSlideAsPNG(selectedSlideIndex)}
-              className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-all shadow shadow-indigo-600/30 flex items-center justify-center space-x-2"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              <span>Download Active PNG</span>
-            </button>
-            <button 
-              onClick={() => downloadSlideAsSVG(selectedSlideIndex)}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold py-2 px-4 rounded-xl text-[11px] border border-slate-800 transition-all flex items-center justify-center space-x-2"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              <span>Export Vector SVG</span>
-            </button>
-          </div>
-
-        </aside>
-
-        {/* Central Design Canvas Studio Area */}
-        <main className="flex-1 bg-[#090D16] overflow-y-auto p-8 flex flex-col items-center">
-          
-          {/* Work Mode Banner */}
-          <div className="w-full max-w-5xl flex justify-between items-center mb-6 shrink-0">
-            <div>
-              <h2 className="text-lg font-extrabold text-white flex items-center space-x-2">
-                <span>⚡</span>
-                <span>{viewMode === 'grid' ? 'LIVE TEMPLATE BUNDLE PREVIEW (6 SLIDES)' : 'FOCUS CREATIVE STUDIO'}</span>
-              </h2>
-              <p className="text-xs text-slate-400">All slides sync simultaneously to your branding color palette & fonts</p>
-            </div>
-            {viewMode === 'edit-focus' && (
-              <div className="flex space-x-2">
-                <button 
-                  onClick={() => setSelectedSlideIndex(prev => (prev - 1 + 6) % 6)}
-                  className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
-                >
-                  ◀ Previous
-                </button>
-                <span className="px-3 py-2 bg-[#121927] border border-slate-800 rounded-lg text-xs font-bold text-slate-300 flex items-center">
-                  Slide {selectedSlideIndex + 1} / 6
-                </span>
-                <button 
-                  onClick={() => setSelectedSlideIndex(prev => (prev + 1) % 6)}
-                  className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
-                >
-                  Next ▶
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* GRID VIEW CONTAINER */}
-          {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl">
-              {slidesContent.map((slide, index) => (
-                <div 
-                  key={slide.id} 
-                  className={`flex flex-col space-y-2 p-3 bg-[#0F1626] rounded-2xl border transition-all ${selectedSlideIndex === index ? 'border-indigo-500 shadow-xl shadow-indigo-600/10' : 'border-slate-800/80 hover:border-slate-700'}`}
-                >
-                  <div className="flex justify-between items-center px-1">
-                    <span className="text-[10px] font-bold text-indigo-400">SLIDE {slide.id} - {getSlideTypeName(index)}</span>
-                    <div className="flex space-x-1.5">
-                      <button 
-                        onClick={() => { setSelectedSlideIndex(index); setViewMode('edit-focus'); }}
-                        className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[9px] font-bold px-2"
-                        title="Edit Focused slide"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => downloadSlideAsPNG(index)}
-                        className="p-1 rounded bg-indigo-950 text-indigo-400 hover:bg-indigo-900 text-[9px] font-bold px-1.5"
-                        title="Download PNG File"
-                      >
-                        PNG
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="relative aspect-[4/5] rounded-xl overflow-hidden shadow-lg border border-slate-900 bg-slate-950">
-                    {renderSlideSVG(index, slide)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* FOCUS STUDIO VIEW */
-            <div className="w-full max-w-5xl flex flex-col items-center">
-              <div className="w-full max-w-lg aspect-[4/5] bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border-2 border-indigo-500/30">
-                {renderSlideSVG(selectedSlideIndex, slidesContent[selectedSlideIndex])}
-              </div>
-              <div className="mt-6 flex space-x-3 w-full max-w-lg">
-                <button 
-                  onClick={() => downloadSlideAsPNG(selectedSlideIndex)}
-                  className="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-3 px-5 rounded-xl text-xs transition shadow flex items-center justify-center space-x-2"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  <span>Export Portrait PNG (1080 x 1350)</span>
-                </button>
-                <button 
-                  onClick={() => downloadSlideAsSVG(selectedSlideIndex)}
-                  className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-3 px-4 rounded-xl text-xs transition flex items-center justify-center space-x-2"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  <span>SVG</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-        </main>
+        </div>
 
       </div>
 
-      {/* Floating Global Action Feedback Toast */}
-      {notification && (
-        <div className="fixed bottom-6 right-6 bg-[#161F32] border border-indigo-500/30 text-slate-100 py-3.5 px-6 rounded-2xl shadow-2xl flex items-center space-x-3 z-50 animate-bounce">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
-          <span className="text-xs font-bold">{notification}</span>
+      <div class="sidebar-actions">
+        <button class="btn-primary" onclick="downloadPNG(state.selectedSlide)">
+          <svg class="btn-svg" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Download Active PNG
+        </button>
+        <button class="btn-secondary" onclick="downloadSVG(state.selectedSlide)">
+          <svg class="btn-svg" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          Export Vector SVG
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CANVAS -->
+    <main id="canvas-area">
+      <div class="canvas-header">
+        <div>
+          <div class="canvas-title" id="canvas-title">⚡ LIVE TEMPLATE BUNDLE PREVIEW (6 SLIDES)</div>
+          <div class="canvas-sub">All slides sync simultaneously to your branding palette & fonts</div>
         </div>
-      )}
+        <div class="nav-controls" id="nav-controls" style="display:none">
+          <button class="nav-btn" onclick="navigate(-1)">◀ Previous</button>
+          <span class="slide-counter" id="focus-counter">Slide 1 / 6</span>
+          <button class="nav-btn" onclick="navigate(1)">Next ▶</button>
+        </div>
+      </div>
 
-    </div>
-  );
+      <div class="grid-view" id="grid-view"></div>
+      <div class="focus-view" id="focus-view" style="display:none">
+        <div class="focus-frame" id="focus-frame"></div>
+        <div class="focus-actions">
+          <button class="focus-btn-primary" onclick="downloadPNG(state.selectedSlide)">
+            <svg class="btn-svg" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Export Portrait PNG (1080 × 1350)
+          </button>
+          <button class="focus-btn-secondary" onclick="downloadSVG(state.selectedSlide)">
+            <svg class="btn-svg" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            SVG
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
 
-  // Helper mapping to slide types names
-  function getSlideTypeName(index) {
-    const types = ['The Attention Hook', 'Before / After split', 'Organic Tweet Quote', 'Core Action Steps', 'Big Proof Statistic', 'Action Lead CTA'];
-    return types[index];
+<div id="toast"><div class="toast-dot"></div><span id="toast-msg"></span></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const PRESETS = [
+  { id:'midnight-obsidian', name:'Midnight Obsidian', description:'Tech & AI (Modern Dark Mode)', bg:'#0E111A', card:'#1B2234', text:'#F3F4F6', textMuted:'#9CA3AF', accent:'#10B981', fontHeader:'League Spartan', fontBody:'Plus Jakarta Sans' },
+  { id:'warm-latte', name:'Warm Latte', description:'Aesthetic, Minimalist, Lifestyle', bg:'#FAF7F2', card:'#F0E9DC', text:'#2D2722', textMuted:'#7A7067', accent:'#B45309', fontHeader:'Playfair Display', fontBody:'Montserrat' },
+  { id:'wealth-navy', name:'Wealth Navy', description:'Finance, Business, Crypto', bg:'#0B132B', card:'#1C2541', text:'#FFFFFF', textMuted:'#8D99AE', accent:'#F5A623', fontHeader:'Archivo Black', fontBody:'Plus Jakarta Sans' },
+  { id:'coral-energy', name:'Coral Energy', description:'Fitness, High Impact, Creators', bg:'#0A0A0A', card:'#1A1A1A', text:'#FFFFFF', textMuted:'#A3A3A3', accent:'#FF4757', fontHeader:'Anton', fontBody:'Plus Jakarta Sans' },
+  { id:'lavender-editorial', name:'Lavender Editorial', description:'Creative, High Fashion, Design', bg:'#F5F3FF', card:'#EDE9FE', text:'#1E1B4B', textMuted:'#6D28D9', accent:'#EC4899', fontHeader:'Playfair Display', fontBody:'Plus Jakarta Sans' }
+];
+
+const SLIDE_TYPES = ['The Attention Hook','Before / After Split','Organic Tweet Quote','Core Action Steps','Big Proof Statistic','Action Lead CTA'];
+
+const state = {
+  activePresetId: 'midnight-obsidian',
+  colors: { bg:'#0E111A', card:'#1B2234', text:'#F3F4F6', textMuted:'#9CA3AF', accent:'#10B981' },
+  fonts: { header:'League Spartan', body:'Plus Jakarta Sans' },
+  branding: { tag:'AI & SAAS WORKFLOWS', author:'Aarav Sharma', handle:'@aarav_tech' },
+  slides: [
+    { id:1, title:'3 AI Tools You Are Using Wrong.', accentWord:'Wrong.', desc:'Thousands of founders waste 10+ hours weekly doing this the manual way. Here is how to fix it immediately.', badge:'PRO TIPS' },
+    { id:2, wrongTitle:'THE MANUAL WAY', wrongText:'Copy-pasting ChatGPT outputs directly without formatting or tone correction.', rightTitle:'THE EXPERT WAY', rightText:'Use system prompts to enforce formatting, structural constraints, and clean voice outputs.', statLabel:'TIME SAVED: 80%' },
+    { id:3, tweetText:"Building in public is not about showing daily graphs. It's about letting your users inside your development struggles, errors, and key breakthroughs. That builds unbreakable organic trust.", likes:'4,821', retweets:'842' },
+    { id:4, steps:[{num:'01',title:'Define the prompt goal',body:'Break down your automation task into micro-agents.'},{num:'02',title:'Setup the Context',body:'Feed target guidelines, formatting limits and example data.'},{num:'03',title:'Chain multiple runs',body:'Pass results from previous step directly into the next API.'}] },
+    { id:5, bigStat:'92%', statDesc:'of modern creators struggle with consistency, not skill. Systemizing your assets solves this instantly.', progressVal:92 },
+    { id:6, ctaTitle:'Ready to build high-converting bundles?', ctaButton:'Grab My Free Asset Kit', ctaSteps:['✓ Save this post for later','✓ Tag a designer in comments','✓ Click link in bio to copy templates'] }
+  ],
+  selectedSlide: 0,
+  view: 'grid',
+  activeTab: 'design'
+};
+
+// ─── SVG HELPERS ─────────────────────────────────────────────────────────────
+const W = 1080, H = 1350;
+
+function wrapTitle(title, accentWord, font, textColor, accentColor, maxWidth, fontSize) {
+  const words = title.split(' ');
+  const lines = [], chars = fontSize * 0.45;
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? `${cur} ${w}` : w;
+    if (test.length * chars > maxWidth) { lines.push(cur); cur = w; } else cur = test;
   }
-
-  // Pure SVG Template Renderers inside React
-  function renderSlideSVG(index, slide) {
-    // Shared dimensions mapping to Instagram Portrait feed standard (4:5 Ratio - 1080 x 1350 Width/Height)
-    const W = 1080;
-    const H = 1350;
-
-    switch (index) {
-      case 0:
-        return (
-          <svg 
-            id={`svg-slide-0`} 
-            viewBox={`0 0 ${W} ${H}`} 
-            className="w-full h-full object-contain"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* Background Rect */}
-            <rect width={W} height={H} fill={themeColors.bg} />
-
-            {/* Gradient Overlay Glows */}
-            <circle cx={W*0.2} cy={H*0.2} r={400} fill={themeColors.accent} fillOpacity="0.08" filter="blur(80px)" />
-            <circle cx={W*0.8} cy={H*0.8} r={400} fill={themeColors.accent} fillOpacity="0.06" filter="blur(80px)" />
-
-            {/* Layout Header / Tag */}
-            <g transform="translate(100, 150)">
-              {/* Green indicator dot */}
-              <circle cx="0" cy="-6" r="8" fill={themeColors.accent} />
-              <text 
-                x="24" 
-                y="0" 
-                fill={themeColors.textMuted} 
-                fontSize="24" 
-                fontFamily={fonts.body} 
-                fontWeight="bold" 
-                letterSpacing="4"
-              >
-                {branding.tag.toUpperCase()}
-              </text>
-            </g>
-
-            <g transform="translate(900, 150)">
-              <circle cx="-10" cy="-6" r="6" fill={themeColors.textMuted} fillOpacity="0.2" />
-              <circle cx="10" cy="-6" r="6" fill={themeColors.textMuted} fillOpacity="0.2" />
-              <circle cx="30" cy="-6" r="6" fill={themeColors.textMuted} fillOpacity="0.2" />
-            </g>
-
-            {/* Large Catchy Badge */}
-            <g transform="translate(100, 240)">
-              <rect width="180" height="48" rx="8" fill={themeColors.accent} fillOpacity="0.1" stroke={themeColors.accent} strokeWidth="1.5" />
-              <text x="90" y="30" textAnchor="middle" fill={themeColors.accent} fontSize="18" fontFamily={fonts.body} fontWeight="800" letterSpacing="2">
-                {slide.badge || 'PRO TIPS'}
-              </text>
-            </g>
-
-            {/* Hook Header Headline Wrap */}
-            <g transform="translate(100, 390)">
-              {/* Build dynamic wrap logic in SVG for safety */}
-              {renderWrappedTitle(slide.title, slide.accentWord, fonts.header, themeColors.text, themeColors.accent, 880, 84)}
-            </g>
-
-            {/* Middle decorative Divider element */}
-            <line x1="100" y1="780" x2="980" y2="780" stroke={themeColors.textMuted} strokeWidth="1" strokeOpacity="0.15" />
-
-            {/* Narrative description tag */}
-            <g transform="translate(100, 840)">
-              {renderWrappedText(slide.desc, fonts.body, themeColors.textMuted, 880, 36, 54)}
-            </g>
-
-            {/* Bottom Branding Bar */}
-            <g transform={`translate(100, ${H - 180})`}>
-              {/* Mock Circle Avatar */}
-              <circle cx="40" cy="40" r="40" fill={themeColors.card} stroke={themeColors.textMuted} strokeWidth="1" strokeOpacity="0.15" />
-              <text x="40" y="47" textAnchor="middle" fill={themeColors.accent} fontSize="28" fontFamily={fonts.header} fontWeight="bold">
-                {branding.author ? branding.author.charAt(0) : 'A'}
-              </text>
-
-              <text x="100" y="32" fill={themeColors.text} fontSize="24" fontFamily={fonts.body} fontWeight="bold">{branding.author}</text>
-              <text x="100" y="60" fill={themeColors.textMuted} fontSize="20" fontFamily={fonts.body}>{branding.handle}</text>
-
-              {/* Bookmark call to action */}
-              <g transform="translate(720, 10)">
-                <rect width="160" height="54" rx="27" fill={themeColors.card} stroke={themeColors.textMuted} strokeWidth="1" strokeOpacity="0.2" />
-                {/* SVG Bookmark Icon */}
-                <path d="M755 24h18v18l-9-6-9 6V24z" fill={themeColors.accent} transform="translate(-725, 0)" />
-                <text x="75" y="32" fill={themeColors.text} fontSize="16" fontFamily={fonts.body} fontWeight="bold" letterSpacing="1">SAVE THIS</text>
-              </g>
-            </g>
-          </svg>
-        );
-
-      case 1:
-        return (
-          <svg 
-            id={`svg-slide-1`} 
-            viewBox={`0 0 ${W} ${H}`} 
-            className="w-full h-full object-contain"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width={W} height={H} fill={themeColors.bg} />
-            <circle cx={W*0.5} cy={H*0.5} r={350} fill={themeColors.accent} fillOpacity="0.04" filter="blur(100px)" />
-
-            {/* Global Header */}
-            <g transform="translate(100, 120)">
-              <text x="0" y="0" fill={themeColors.textMuted} fontSize="22" fontFamily={fonts.body} fontWeight="bold" letterSpacing="4">
-                {branding.tag.toUpperCase()}
-              </text>
-            </g>
-
-            {/* Left Bad Side Box */}
-            <g transform="translate(100, 220)">
-              <rect width="880" height="340" rx="16" fill="#742A2A" fillOpacity="0.1" stroke="#EF4444" strokeWidth="1.5" strokeOpacity="0.3" />
-              
-              <g transform="translate(40, 50)">
-                <circle cx="20" cy="15" r="18" fill="#EF4444" fillOpacity="0.2" />
-                <path d="M12 7l16 16M28 7L12 23" stroke="#EF4444" strokeWidth="3.5" strokeLinecap="round" transform="translate(0, 0)" />
-                <text x="55" y="24" fill="#EF4444" fontSize="24" fontFamily={fonts.header} fontWeight="bold" letterSpacing="2">
-                  {slide.wrongTitle}
-                </text>
-              </g>
-
-              <g transform="translate(40, 130)">
-                {renderWrappedText(slide.wrongText, fonts.body, themeColors.text, 800, 28, 42)}
-              </g>
-            </g>
-
-            {/* Right Smart Side Box */}
-            <g transform="translate(100, 610)">
-              <rect width="880" height="340" rx="16" fill={themeColors.card} stroke={themeColors.accent} strokeWidth="2" strokeOpacity="0.8" />
-              
-              <g transform="translate(40, 50)">
-                <circle cx="20" cy="15" r="18" fill={themeColors.accent} fillOpacity="0.2" />
-                <path d="M10 16l6 6 12-12" stroke={themeColors.accent} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                <text x="55" y="24" fill={themeColors.accent} fontSize="24" fontFamily={fonts.header} fontWeight="bold" letterSpacing="2">
-                  {slide.rightTitle}
-                </text>
-              </g>
-
-              <g transform="translate(40, 130)">
-                {renderWrappedText(slide.rightText, fonts.body, themeColors.text, 800, 28, 42)}
-              </g>
-
-              {/* Bottom badge of right side */}
-              <g transform="translate(620, 260)">
-                <rect width="220" height="42" rx="21" fill={themeColors.accent} />
-                <text x="110" y="26" textAnchor="middle" fill={themeColors.bg} fontSize="15" fontFamily={fonts.body} fontWeight="bold">
-                  {slide.statLabel || 'TIME SAVED: 80%'}
-                </text>
-              </g>
-            </g>
-
-            {/* Bottom Credits */}
-            <g transform={`translate(100, ${H - 120})`}>
-              <text x="0" y="0" fill={themeColors.textMuted} fontSize="20" fontFamily={fonts.body}>{branding.handle}</text>
-              <text x="880" y="0" textAnchor="end" fill={themeColors.accent} fontSize="20" fontFamily={fonts.body} fontWeight="bold">SWIPE LEFT &gt;&gt;</text>
-            </g>
-          </svg>
-        );
-
-      case 2:
-        return (
-          <svg 
-            id={`svg-slide-2`} 
-            viewBox={`0 0 ${W} ${H}`} 
-            className="w-full h-full object-contain"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width={W} height={H} fill={themeColors.bg} />
-            
-            {/* Soft Radial Ambient Lights */}
-            <circle cx={W*0.5} cy={H*0.5} r={400} fill={themeColors.accent} fillOpacity="0.05" filter="blur(80px)" />
-
-            <g transform="translate(100, 120)">
-              <text x="0" y="0" fill={themeColors.textMuted} fontSize="22" fontFamily={fonts.body} fontWeight="bold" letterSpacing="4">
-                {branding.tag.toUpperCase()}
-              </text>
-            </g>
-
-            {/* Social Media Tweet Card Box */}
-            <g transform="translate(100, 240)">
-              {/* Outer Card Wrap */}
-              <rect width="880" height="660" rx="24" fill={themeColors.card} stroke={themeColors.textMuted} strokeWidth="1" strokeOpacity="0.1" />
-
-              {/* Tweet Header */}
-              <g transform="translate(60, 60)">
-                {/* Simulated Profile Picture Frame */}
-                <circle cx="45" cy="45" r="45" fill={themeColors.bg} stroke={themeColors.accent} strokeWidth="1.5" />
-                <text x="45" y="55" textAnchor="middle" fill={themeColors.accent} fontSize="32" fontFamily={fonts.header} fontWeight="bold">
-                  {branding.author ? branding.author.charAt(0) : 'A'}
-                </text>
-
-                {/* Names */}
-                <text x="115" y="35" fill={themeColors.text} fontSize="28" fontFamily={fonts.body} fontWeight="bold">{branding.author}</text>
-                <text x="115" y="68" fill={themeColors.textMuted} fontSize="22" fontFamily={fonts.body}>{branding.handle}</text>
-
-                {/* Twitter Blue verification tick */}
-                <g transform="translate(340, 12)" fill="#3B82F6">
-                  <circle cx="12" cy="12" r="12" />
-                  <path d="M8 12l3 3 6-6" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                </g>
-
-                {/* Twitter Logo */}
-                <path d="M720 15h30v30h-30z" fill="none" />
-                <path d="M720 20l12 14-12 16h6l8-10 6 10h12L738 34l11-14h-6l-7 8-6-8h-10z" fill={themeColors.textMuted} fillOpacity="0.3" />
-              </g>
-
-              {/* Tweet body message */}
-              <g transform="translate(60, 190)">
-                {renderWrappedText(slide.tweetText, fonts.body, themeColors.text, 760, 32, 52)}
-              </g>
-
-              {/* Decorative Line divider */}
-              <line x1="60" y1="520" x2="820" y2="520" stroke={themeColors.textMuted} strokeWidth="1" strokeOpacity="0.1" />
-
-              {/* Actions & Metrics Bar */}
-              <g transform="translate(60, 580)">
-                {/* Hearts / Likes */}
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#EF4444" transform="scale(1.4)" />
-                <text x="42" y="24" fill={themeColors.text} fontSize="22" fontFamily={fonts.body} fontWeight="bold">{slide.likes}</text>
-
-                {/* Retweets */}
-                <g transform="translate(240, 0)">
-                  <path d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z" fill={themeColors.accent} transform="scale(1.4)" />
-                  <text x="42" y="24" fill={themeColors.text} fontSize="22" fontFamily={fonts.body} fontWeight="bold">{slide.retweets}</text>
-                </g>
-
-                {/* Save Icon */}
-                <g transform="translate(680, -4)">
-                  <rect width="40" height="40" rx="20" fill={themeColors.accent} fillOpacity="0.1" />
-                  <path d="M12 8h16v16l-8-5.33L12 24z" fill={themeColors.accent} transform="scale(1.2) translate(1, 1)" />
-                </g>
-              </g>
-            </g>
-
-            {/* Bottom Credits */}
-            <g transform={`translate(100, ${H - 120})`}>
-              <text x="0" y="0" fill={themeColors.textMuted} fontSize="20" fontFamily={fonts.body}>{branding.handle}</text>
-              <text x="880" y="0" textAnchor="end" fill={themeColors.accent} fontSize="20" fontFamily={fonts.body} fontWeight="bold">SWIPE LEFT &gt;&gt;</text>
-            </g>
-          </svg>
-        );
-
-      case 3:
-        return (
-          <svg 
-            id={`svg-slide-3`} 
-            viewBox={`0 0 ${W} ${H}`} 
-            className="w-full h-full object-contain"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width={W} height={H} fill={themeColors.bg} />
-            <circle cx={W*0.8} cy={H*0.2} r={350} fill={themeColors.accent} fillOpacity="0.04" filter="blur(80px)" />
-
-            <g transform="translate(100, 120)">
-              <text x="0" y="0" fill={themeColors.textMuted} fontSize="22" fontFamily={fonts.body} fontWeight="bold" letterSpacing="4">
-                {branding.tag.toUpperCase()}
-              </text>
-            </g>
-
-            {/* Step list loop */}
-            {slide.steps.map((step, sIdx) => {
-              const startY = 220 + (sIdx * 250);
-              return (
-                <g key={sIdx} transform={`translate(100, ${startY})`}>
-                  {/* Step container card */}
-                  <rect width="880" height="210" rx="16" fill={themeColors.card} stroke={themeColors.textMuted} strokeWidth="1" strokeOpacity="0.08" />
-
-                  {/* Left accent color badge index */}
-                  <g transform="translate(40, 50)">
-                    <rect width="64" height="64" rx="12" fill={themeColors.accent} fillOpacity="0.1" />
-                    <text x="32" y="42" textAnchor="middle" fill={themeColors.accent} fontSize="28" fontFamily={fonts.header} fontWeight="extrabold">
-                      {step.num}
-                    </text>
-                  </g>
-
-                  {/* Title & Body content */}
-                  <g transform="translate(140, 50)">
-                    <text x="0" y="24" fill={themeColors.text} fontSize="26" fontFamily={fonts.header} fontWeight="bold">{step.title}</text>
-                    <text x="0" y="65" fill={themeColors.textMuted} fontSize="19" fontFamily={fonts.body}>{step.body}</text>
-                  </g>
-                </g>
-              );
-            })}
-
-            {/* Bottom Navigation Progress Indicators */}
-            <g transform={`translate(100, ${H - 120})`}>
-              <text x="0" y="0" fill={themeColors.textMuted} fontSize="20" fontFamily={fonts.body}>{branding.handle}</text>
-              <g transform="translate(380, -10)">
-                <line x1="0" y1="0" x2="120" y2="0" stroke={themeColors.textMuted} strokeWidth="4" strokeOpacity="0.2" />
-                <line x1="40" y1="0" x2="80" y2="0" stroke={themeColors.accent} strokeWidth="4" />
-              </g>
-              <text x="880" y="0" textAnchor="end" fill={themeColors.accent} fontSize="20" fontFamily={fonts.body} fontWeight="bold">SWIPE LEFT &gt;&gt;</text>
-            </g>
-          </svg>
-        );
-
-      case 4:
-        return (
-          <svg 
-            id={`svg-slide-4`} 
-            viewBox={`0 0 ${W} ${H}`} 
-            className="w-full h-full object-contain"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width={W} height={H} fill={themeColors.bg} />
-            <circle cx={W*0.2} cy={H*0.8} r={400} fill={themeColors.accent} fillOpacity="0.06" filter="blur(80px)" />
-
-            <g transform="translate(100, 120)">
-              <text x="0" y="0" fill={themeColors.textMuted} fontSize="22" fontFamily={fonts.body} fontWeight="bold" letterSpacing="4">
-                {branding.tag.toUpperCase()}
-              </text>
-            </g>
-
-            {/* Big Numeric Metric Container */}
-            <g transform="translate(100, 220)">
-              <rect width="880" height="420" rx="24" fill={themeColors.card} stroke={themeColors.textMuted} strokeWidth="1" strokeOpacity="0.08" />
-
-              <g transform="translate(60, 60)">
-                {/* Visual Circle Meter */}
-                <circle cx="150" cy="150" r="130" fill="none" stroke={themeColors.bg} strokeWidth="24" />
-                <circle 
-                  cx="150" 
-                  cy="150" 
-                  r="130" 
-                  fill="none" 
-                  stroke={themeColors.accent} 
-                  strokeWidth="24" 
-                  strokeDasharray={`${2 * Math.PI * 130}`} 
-                  strokeDashoffset={`${2 * Math.PI * 130 * (1 - slide.progressVal / 100)}`}
-                  transform="rotate(-90, 150, 150)"
-                  strokeLinecap="round"
-                />
-
-                {/* Big center stat text */}
-                <text x="150" y="175" textAnchor="middle" fill={themeColors.text} fontSize="92" fontFamily={fonts.header} fontWeight="black">
-                  {slide.bigStat}
-                </text>
-              </g>
-
-              {/* Stat Metric Metadata description side */}
-              <g transform="translate(420, 120)">
-                <rect width="180" height="36" rx="6" fill={themeColors.accent} fillOpacity="0.15" />
-                <text x="90" y="24" textAnchor="middle" fill={themeColors.accent} fontSize="14" fontFamily={fonts.body} fontWeight="bold" letterSpacing="2">HIGH CONVERSION</text>
-
-                <text x="0" y="80" fill={themeColors.text} fontSize="28" fontFamily={fonts.header} fontWeight="bold">PROVEN AUDIENCE MOCK</text>
-                <text x="0" y="120" fill={themeColors.textMuted} fontSize="18" fontFamily={fonts.body}>Validated across 42,000 active funnels.</text>
-              </g>
-            </g>
-
-            {/* Explanatory description below the graphic block */}
-            <g transform="translate(100, 720)">
-              {renderWrappedText(slide.statDesc, fonts.body, themeColors.text, 880, 32, 52)}
-            </g>
-
-            {/* Bottom Credits */}
-            <g transform={`translate(100, ${H - 120})`}>
-              <text x="0" y="0" fill={themeColors.textMuted} fontSize="20" fontFamily={fonts.body}>{branding.handle}</text>
-              <text x="880" y="0" textAnchor="end" fill={themeColors.accent} fontSize="20" fontFamily={fonts.body} fontWeight="bold">SWIPE LEFT &gt;&gt;</text>
-            </g>
-          </svg>
-        );
-
-      case 5:
-        return (
-          <svg 
-            id={`svg-slide-5`} 
-            viewBox={`0 0 ${W} ${H}`} 
-            className="w-full h-full object-contain"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width={W} height={H} fill={themeColors.bg} />
-
-            {/* Elegant glowing graphics representing final page */}
-            <circle cx={W*0.5} cy={H*0.5} r={400} fill={themeColors.accent} fillOpacity="0.08" filter="blur(110px)" />
-
-            <g transform="translate(100, 120)">
-              <text x="0" y="0" fill={themeColors.textMuted} fontSize="22" fontFamily={fonts.body} fontWeight="bold" letterSpacing="4">
-                {branding.tag.toUpperCase()}
-              </text>
-            </g>
-
-            {/* CTA Core Header Callout */}
-            <g transform="translate(100, 240)">
-              {renderWrappedTitle(slide.ctaTitle, '', fonts.header, themeColors.text, themeColors.accent, 880, 76)}
-            </g>
-
-            {/* Steps Checklist Card Box */}
-            <g transform="translate(100, 520)">
-              <rect width="880" height="340" rx="20" fill={themeColors.card} stroke={themeColors.textMuted} strokeWidth="1" strokeOpacity="0.08" />
-
-              {slide.ctaSteps.map((stepLine, lIdx) => (
-                <g key={lIdx} transform={`translate(60, ${60 + (lIdx * 80)})`}>
-                  {/* Decorative Sparkle icon */}
-                  <circle cx="20" cy="15" r="16" fill={themeColors.accent} fillOpacity="0.1" />
-                  <path d="M14 15l4-4 4 4-4 4z" fill={themeColors.accent} />
-                  <text x="55" y="22" fill={themeColors.text} fontSize="22" fontFamily={fonts.body} fontWeight="600">
-                    {stepLine}
-                  </text>
-                </g>
-              ))}
-            </g>
-
-            {/* Main Interactive Button Mock */}
-            <g transform="translate(100, 920)">
-              <rect width="880" height="96" rx="48" fill={themeColors.accent} />
-              <text x="440" y="58" textAnchor="middle" fill={themeColors.bg} fontSize="26" fontFamily={fonts.header} fontWeight="black" letterSpacing="2">
-                {slide.ctaButton.toUpperCase()}
-              </text>
-            </g>
-
-            {/* Bottom Credits Branding */}
-            <g transform={`translate(100, ${H - 120})`}>
-              {/* Creator details */}
-              <text x="0" y="0" fill={themeColors.text} fontSize="22" fontFamily={fonts.body} fontWeight="bold">{branding.author}</text>
-              <text x="0" y="28" fill={themeColors.textMuted} fontSize="18" fontFamily={fonts.body}>{branding.handle}</text>
-
-              {/* Action indicators */}
-              <text x="880" y="15" textAnchor="end" fill={themeColors.accent} fontSize="20" fontFamily={fonts.body} fontWeight="bold">TAP LINK IN BIO ↗</text>
-            </g>
-          </svg>
-        );
-
-      default:
-        return null;
+  if (cur) lines.push(cur);
+  return lines.map((line, i) => {
+    const y = i * (fontSize * 1.25);
+    if (accentWord && line.toLowerCase().includes(accentWord.toLowerCase())) {
+      const parts = line.split(new RegExp(`(${accentWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'));
+      const tspans = parts.map(p => `<tspan fill="${p.toLowerCase() === accentWord.toLowerCase() ? accentColor : textColor}">${esc(p)}</tspan>`).join('');
+      return `<text y="${y}" fill="${textColor}" font-size="${fontSize}" font-family="${font}" font-weight="900" letter-spacing="-1.5">${tspans}</text>`;
     }
+    return `<text y="${y}" fill="${textColor}" font-size="${fontSize}" font-family="${font}" font-weight="900" letter-spacing="-1.5">${esc(line)}</text>`;
+  }).join('');
+}
+
+function wrapText(text, font, color, maxWidth, fontSize, lineH) {
+  const words = text.split(' ');
+  const lines = [], chars = fontSize * 0.5;
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? `${cur} ${w}` : w;
+    if (test.length * chars > maxWidth) { lines.push(cur); cur = w; } else cur = test;
   }
+  if (cur) lines.push(cur);
+  return lines.map((line, i) =>
+    `<text y="${i * lineH}" fill="${color}" font-size="${fontSize}" font-family="${font}">${esc(line)}</text>`
+  ).join('');
+}
 
-  // Pure SVG Text Wrappers ensuring clean display inside SVG renders
-  function renderWrappedTitle(title, accentWord, font, textColor, accentColor, maxWidth, fontSize) {
-    const words = title.split(' ');
-    const lines = [];
-    let currentLine = '';
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-    words.forEach(word => {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
-      // Approximate character limits matching width boundaries
-      if (testLine.length * (fontSize * 0.45) > maxWidth) {
-        lines.push(currentLine);
-        currentLine = word;
-      } else {
-        currentLine = testLine;
-      }
-    });
-    if (currentLine) lines.push(currentLine);
+function slideSVG(idx) {
+  const c = state.colors, f = state.fonts, b = state.branding, s = state.slides[idx];
+  const id = `svg-slide-${idx}`;
+  const glow = `<circle cx="${W*.5}" cy="${H*.5}" r="400" fill="${c.accent}" fill-opacity="0.06" filter="url(#blur)"/>`;
 
-    return lines.map((line, idx) => {
-      // Accent word highlighter match inside SVG line
-      const hasAccent = accentWord && line.toLowerCase().includes(accentWord.toLowerCase());
-      if (hasAccent) {
-        const parts = line.split(new RegExp(`(${accentWord})`, 'gi'));
-        return (
-          <text 
-            key={idx} 
-            y={idx * (fontSize * 1.25)} 
-            fill={textColor} 
-            fontSize={fontSize} 
-            fontFamily={font} 
-            fontWeight="900" 
-            letterSpacing="-1.5"
-          >
-            {parts.map((p, pIdx) => (
-              <tspan key={pIdx} fill={p.toLowerCase() === accentWord.toLowerCase() ? accentColor : textColor}>
-                {p}
-              </tspan>
-            ))}
-          </text>
-        );
-      }
+  const footer = (extra='') => `
+    <g transform="translate(100,${H-120})">
+      <text x="0" y="0" fill="${c.textMuted}" font-size="20" font-family="${f.body}">${esc(b.handle)}</text>
+      ${extra}
+      <text x="880" y="0" text-anchor="end" fill="${c.accent}" font-size="20" font-family="${f.body}" font-weight="bold">SWIPE LEFT &gt;&gt;</text>
+    </g>`;
 
-      return (
-        <text 
-          key={idx} 
-          y={idx * (fontSize * 1.25)} 
-          fill={textColor} 
-          fontSize={fontSize} 
-          fontFamily={font} 
-          fontWeight="900" 
-          letterSpacing="-1.5"
-        >
-          {line}
-        </text>
-      );
-    });
-  }
+  const defs = `<defs><filter id="blur"><feGaussianBlur stdDeviation="40"/></filter></defs>`;
 
-  function renderWrappedText(text, font, color, maxWidth, fontSize, lineHeight) {
-    const words = text.split(' ');
-    const lines = [];
-    let currentLine = '';
+  switch(idx) {
+    case 0: return `<svg id="${id}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${defs}
+      <rect width="${W}" height="${H}" fill="${c.bg}"/>
+      <circle cx="${W*.2}" cy="${H*.2}" r="400" fill="${c.accent}" fill-opacity="0.08" filter="url(#blur)"/>
+      <circle cx="${W*.8}" cy="${H*.8}" r="400" fill="${c.accent}" fill-opacity="0.06" filter="url(#blur)"/>
+      <g transform="translate(100,150)">
+        <circle cx="0" cy="-6" r="8" fill="${c.accent}"/>
+        <text x="24" y="0" fill="${c.textMuted}" font-size="24" font-family="${f.body}" font-weight="bold" letter-spacing="4">${esc(b.tag.toUpperCase())}</text>
+      </g>
+      <g transform="translate(900,150)">
+        <circle cx="-10" cy="-6" r="6" fill="${c.textMuted}" fill-opacity=".2"/>
+        <circle cx="10" cy="-6" r="6" fill="${c.textMuted}" fill-opacity=".2"/>
+        <circle cx="30" cy="-6" r="6" fill="${c.textMuted}" fill-opacity=".2"/>
+      </g>
+      <g transform="translate(100,240)">
+        <rect width="180" height="48" rx="8" fill="${c.accent}" fill-opacity=".1" stroke="${c.accent}" stroke-width="1.5"/>
+        <text x="90" y="30" text-anchor="middle" fill="${c.accent}" font-size="18" font-family="${f.body}" font-weight="800" letter-spacing="2">${esc(s.badge||'PRO TIPS')}</text>
+      </g>
+      <g transform="translate(100,390)">${wrapTitle(s.title,s.accentWord,f.header,c.text,c.accent,880,84)}</g>
+      <line x1="100" y1="780" x2="980" y2="780" stroke="${c.textMuted}" stroke-width="1" stroke-opacity=".15"/>
+      <g transform="translate(100,840)">${wrapText(s.desc,f.body,c.textMuted,880,36,54)}</g>
+      <g transform="translate(100,${H-180})">
+        <circle cx="40" cy="40" r="40" fill="${c.card}" stroke="${c.textMuted}" stroke-width="1" stroke-opacity=".15"/>
+        <text x="40" y="47" text-anchor="middle" fill="${c.accent}" font-size="28" font-family="${f.header}" font-weight="bold">${esc((b.author||'A').charAt(0))}</text>
+        <text x="100" y="32" fill="${c.text}" font-size="24" font-family="${f.body}" font-weight="bold">${esc(b.author)}</text>
+        <text x="100" y="60" fill="${c.textMuted}" font-size="20" font-family="${f.body}">${esc(b.handle)}</text>
+        <g transform="translate(720,10)">
+          <rect width="160" height="54" rx="27" fill="${c.card}" stroke="${c.textMuted}" stroke-width="1" stroke-opacity=".2"/>
+          <text x="80" y="32" text-anchor="middle" fill="${c.text}" font-size="15" font-family="${f.body}" font-weight="bold" letter-spacing="1">SAVE THIS</text>
+        </g>
+      </g>
+    </svg>`;
 
-    words.forEach(word => {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
-      if (testLine.length * (fontSize * 0.5) > maxWidth) {
-        lines.push(currentLine);
-        currentLine = word;
-      } else {
-        currentLine = testLine;
-      }
-    });
-    if (currentLine) lines.push(currentLine);
+    case 1: return `<svg id="${id}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${defs}
+      <rect width="${W}" height="${H}" fill="${c.bg}"/>
+      <circle cx="${W*.5}" cy="${H*.5}" r="350" fill="${c.accent}" fill-opacity=".04" filter="url(#blur)"/>
+      <g transform="translate(100,120)"><text x="0" y="0" fill="${c.textMuted}" font-size="22" font-family="${f.body}" font-weight="bold" letter-spacing="4">${esc(b.tag.toUpperCase())}</text></g>
+      <g transform="translate(100,220)">
+        <rect width="880" height="340" rx="16" fill="#742A2A" fill-opacity=".1" stroke="#EF4444" stroke-width="1.5" stroke-opacity=".3"/>
+        <g transform="translate(40,50)">
+          <circle cx="20" cy="15" r="18" fill="#EF4444" fill-opacity=".2"/>
+          <path d="M12 7l16 16M28 7L12 23" stroke="#EF4444" stroke-width="3.5" stroke-linecap="round"/>
+          <text x="55" y="24" fill="#EF4444" font-size="24" font-family="${f.header}" font-weight="bold" letter-spacing="2">${esc(s.wrongTitle)}</text>
+        </g>
+        <g transform="translate(40,130)">${wrapText(s.wrongText,f.body,c.text,800,28,42)}</g>
+      </g>
+      <g transform="translate(100,610)">
+        <rect width="880" height="340" rx="16" fill="${c.card}" stroke="${c.accent}" stroke-width="2" stroke-opacity=".8"/>
+        <g transform="translate(40,50)">
+          <circle cx="20" cy="15" r="18" fill="${c.accent}" fill-opacity=".2"/>
+          <path d="M10 16l6 6 12-12" stroke="${c.accent}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <text x="55" y="24" fill="${c.accent}" font-size="24" font-family="${f.header}" font-weight="bold" letter-spacing="2">${esc(s.rightTitle)}</text>
+        </g>
+        <g transform="translate(40,130)">${wrapText(s.rightText,f.body,c.text,800,28,42)}</g>
+        <g transform="translate(620,260)">
+          <rect width="220" height="42" rx="21" fill="${c.accent}"/>
+          <text x="110" y="26" text-anchor="middle" fill="${c.bg}" font-size="15" font-family="${f.body}" font-weight="bold">${esc(s.statLabel||'TIME SAVED: 80%')}</text>
+        </g>
+      </g>
+      ${footer()}
+    </svg>`;
 
-    return lines.map((line, idx) => (
-      <text 
-        key={idx} 
-        y={idx * lineHeight} 
-        fill={color} 
-        fontSize={fontSize} 
-        fontFamily={font} 
-      >
-        {line}
-      </text>
-    ));
+    case 2: return `<svg id="${id}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${defs}
+      <rect width="${W}" height="${H}" fill="${c.bg}"/>
+      <circle cx="${W*.5}" cy="${H*.5}" r="400" fill="${c.accent}" fill-opacity=".05" filter="url(#blur)"/>
+      <g transform="translate(100,120)"><text x="0" y="0" fill="${c.textMuted}" font-size="22" font-family="${f.body}" font-weight="bold" letter-spacing="4">${esc(b.tag.toUpperCase())}</text></g>
+      <g transform="translate(100,240)">
+        <rect width="880" height="660" rx="24" fill="${c.card}" stroke="${c.textMuted}" stroke-width="1" stroke-opacity=".1"/>
+        <g transform="translate(60,60)">
+          <circle cx="45" cy="45" r="45" fill="${c.bg}" stroke="${c.accent}" stroke-width="1.5"/>
+          <text x="45" y="55" text-anchor="middle" fill="${c.accent}" font-size="32" font-family="${f.header}" font-weight="bold">${esc((b.author||'A').charAt(0))}</text>
+          <text x="115" y="35" fill="${c.text}" font-size="28" font-family="${f.body}" font-weight="bold">${esc(b.author)}</text>
+          <text x="115" y="68" fill="${c.textMuted}" font-size="22" font-family="${f.body}">${esc(b.handle)}</text>
+          <g transform="translate(340,12)" fill="#3B82F6"><circle cx="12" cy="12" r="12"/><path d="M8 12l3 3 6-6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></g>
+        </g>
+        <g transform="translate(60,190)">${wrapText(s.tweetText,f.body,c.text,760,32,52)}</g>
+        <line x1="60" y1="520" x2="820" y2="520" stroke="${c.textMuted}" stroke-width="1" stroke-opacity=".1"/>
+        <g transform="translate(60,580)">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#EF4444" transform="scale(1.4)"/>
+          <text x="42" y="24" fill="${c.text}" font-size="22" font-family="${f.body}" font-weight="bold">${esc(s.likes)}</text>
+          <g transform="translate(240,0)">
+            <path d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z" fill="${c.accent}" transform="scale(1.4)"/>
+            <text x="42" y="24" fill="${c.text}" font-size="22" font-family="${f.body}" font-weight="bold">${esc(s.retweets)}</text>
+          </g>
+        </g>
+      </g>
+      ${footer()}
+    </svg>`;
+
+    case 3: return `<svg id="${id}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${defs}
+      <rect width="${W}" height="${H}" fill="${c.bg}"/>
+      <circle cx="${W*.8}" cy="${H*.2}" r="350" fill="${c.accent}" fill-opacity=".04" filter="url(#blur)"/>
+      <g transform="translate(100,120)"><text x="0" y="0" fill="${c.textMuted}" font-size="22" font-family="${f.body}" font-weight="bold" letter-spacing="4">${esc(b.tag.toUpperCase())}</text></g>
+      ${s.steps.map((step, sIdx) => {
+        const sy = 220 + sIdx * 250;
+        return `<g transform="translate(100,${sy})">
+          <rect width="880" height="210" rx="16" fill="${c.card}" stroke="${c.textMuted}" stroke-width="1" stroke-opacity=".08"/>
+          <g transform="translate(40,50)">
+            <rect width="64" height="64" rx="12" fill="${c.accent}" fill-opacity=".1"/>
+            <text x="32" y="42" text-anchor="middle" fill="${c.accent}" font-size="28" font-family="${f.header}" font-weight="900">${esc(step.num)}</text>
+          </g>
+          <g transform="translate(140,50)">
+            <text x="0" y="24" fill="${c.text}" font-size="26" font-family="${f.header}" font-weight="bold">${esc(step.title)}</text>
+            <text x="0" y="65" fill="${c.textMuted}" font-size="19" font-family="${f.body}">${esc(step.body)}</text>
+          </g>
+        </g>`;
+      }).join('')}
+      <g transform="translate(100,${H-120})">
+        <text x="0" y="0" fill="${c.textMuted}" font-size="20" font-family="${f.body}">${esc(b.handle)}</text>
+        <g transform="translate(380,-10)">
+          <line x1="0" y1="0" x2="120" y2="0" stroke="${c.textMuted}" stroke-width="4" stroke-opacity=".2"/>
+          <line x1="40" y1="0" x2="80" y2="0" stroke="${c.accent}" stroke-width="4"/>
+        </g>
+        <text x="880" y="0" text-anchor="end" fill="${c.accent}" font-size="20" font-family="${f.body}" font-weight="bold">SWIPE LEFT &gt;&gt;</text>
+      </g>
+    </svg>`;
+
+    case 4: {
+      const circ = 2 * Math.PI * 130;
+      const offset = circ * (1 - s.progressVal / 100);
+      return `<svg id="${id}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+        ${defs}
+        <rect width="${W}" height="${H}" fill="${c.bg}"/>
+        <circle cx="${W*.2}" cy="${H*.8}" r="400" fill="${c.accent}" fill-opacity=".06" filter="url(#blur)"/>
+        <g transform="translate(100,120)"><text x="0" y="0" fill="${c.textMuted}" font-size="22" font-family="${f.body}" font-weight="bold" letter-spacing="4">${esc(b.tag.toUpperCase())}</text></g>
+        <g transform="translate(100,220)">
+          <rect width="880" height="420" rx="24" fill="${c.card}" stroke="${c.textMuted}" stroke-width="1" stroke-opacity=".08"/>
+          <g transform="translate(60,60)">
+            <circle cx="150" cy="150" r="130" fill="none" stroke="${c.bg}" stroke-width="24"/>
+            <circle cx="150" cy="150" r="130" fill="none" stroke="${c.accent}" stroke-width="24" stroke-dasharray="${circ}" stroke-dashoffset="${offset}" transform="rotate(-90,150,150)" stroke-linecap="round"/>
+            <text x="150" y="175" text-anchor="middle" fill="${c.text}" font-size="92" font-family="${f.header}" font-weight="900">${esc(s.bigStat)}</text>
+          </g>
+          <g transform="translate(420,120)">
+            <rect width="180" height="36" rx="6" fill="${c.accent}" fill-opacity=".15"/>
+            <text x="90" y="24" text-anchor="middle" fill="${c.accent}" font-size="14" font-family="${f.body}" font-weight="bold" letter-spacing="2">HIGH CONVERSION</text>
+            <text x="0" y="80" fill="${c.text}" font-size="28" font-family="${f.header}" font-weight="bold">PROVEN METRIC</text>
+            <text x="0" y="120" fill="${c.textMuted}" font-size="18" font-family="${f.body}">Validated across 42,000 active funnels.</text>
+          </g>
+        </g>
+        <g transform="translate(100,720)">${wrapText(s.statDesc,f.body,c.text,880,32,52)}</g>
+        ${footer()}
+      </svg>`;
+    }
+
+    case 5: return `<svg id="${id}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${defs}
+      <rect width="${W}" height="${H}" fill="${c.bg}"/>
+      <circle cx="${W*.5}" cy="${H*.5}" r="400" fill="${c.accent}" fill-opacity=".08" filter="url(#blur)"/>
+      <g transform="translate(100,120)"><text x="0" y="0" fill="${c.textMuted}" font-size="22" font-family="${f.body}" font-weight="bold" letter-spacing="4">${esc(b.tag.toUpperCase())}</text></g>
+      <g transform="translate(100,240)">${wrapTitle(s.ctaTitle,'',f.header,c.text,c.accent,880,76)}</g>
+      <g transform="translate(100,520)">
+        <rect width="880" height="340" rx="20" fill="${c.card}" stroke="${c.textMuted}" stroke-width="1" stroke-opacity=".08"/>
+        ${s.ctaSteps.map((step, lIdx) => `
+          <g transform="translate(60,${60 + lIdx * 80})">
+            <circle cx="20" cy="15" r="16" fill="${c.accent}" fill-opacity=".1"/>
+            <path d="M14 15l4-4 4 4-4 4z" fill="${c.accent}"/>
+            <text x="55" y="22" fill="${c.text}" font-size="22" font-family="${f.body}" font-weight="600">${esc(step)}</text>
+          </g>`).join('')}
+      </g>
+      <g transform="translate(100,920)">
+        <rect width="880" height="96" rx="48" fill="${c.accent}"/>
+        <text x="440" y="58" text-anchor="middle" fill="${c.bg}" font-size="26" font-family="${f.header}" font-weight="900" letter-spacing="2">${esc(s.ctaButton.toUpperCase())}</text>
+      </g>
+      <g transform="translate(100,${H-120})">
+        <text x="0" y="0" fill="${c.text}" font-size="22" font-family="${f.body}" font-weight="bold">${esc(b.author)}</text>
+        <text x="0" y="28" fill="${c.textMuted}" font-size="18" font-family="${f.body}">${esc(b.handle)}</text>
+        <text x="880" y="15" text-anchor="end" fill="${c.accent}" font-size="20" font-family="${f.body}" font-weight="bold">TAP LINK IN BIO ↗</text>
+      </g>
+    </svg>`;
+
+    default: return '';
   }
 }
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  renderPresets();
+  renderColorControls();
+  renderSlideTabs();
+  renderSlideEditor();
+  renderGrid();
+  renderFocusView();
+  renderCanvaTab();
+  syncBrandingInputs();
+}
+
+function renderPresets() {
+  const el = document.getElementById('preset-list');
+  el.innerHTML = PRESETS.map(p => `
+    <button class="preset-btn ${p.id===state.activePresetId?'active':''}" onclick="applyPreset('${p.id}')">
+      <div><div class="preset-name">${esc(p.name)}</div><div class="preset-desc">${esc(p.description)}</div></div>
+      <div class="color-dots">
+        <span class="dot" style="background:${p.bg}"></span>
+        <span class="dot" style="background:${p.card}"></span>
+        <span class="dot" style="background:${p.accent}"></span>
+      </div>
+    </button>`).join('');
+}
+
+function renderColorControls() {
+  const keys = ['bg','accent','card','text'];
+  for (const k of keys) {
+    const v = state.colors[k];
+    const inp = document.getElementById(`c-${k}`);
+    const lbl = document.getElementById(`c-${k}-val`);
+    if (inp) inp.value = v;
+    if (lbl) lbl.textContent = v.toUpperCase();
+  }
+}
+
+function renderSlideTabs() {
+  const tabs = document.getElementById('slide-tabs');
+  tabs.innerHTML = state.slides.map((s,i) =>
+    `<button class="stab ${state.selectedSlide===i?'active':''}" onclick="selectSlide(${i})">Slide ${s.id}</button>`
+  ).join('');
+  document.getElementById('slide-counter-label').textContent = `Slide ${state.selectedSlide+1} of 6`;
+}
+
+function renderSlideEditor() {
+  const ed = document.getElementById('slide-editor');
+  const i = state.selectedSlide, s = state.slides[i];
+  const field = (label, tag, val, rows, key, extra='') => {
+    if (tag === 'textarea')
+      return `<div class="field"><label>${label}</label><textarea class="inp" rows="${rows}" oninput="updateSlide(${i},'${key}',this.value)">${esc(val)}</textarea></div>`;
+    return `<div class="field"><label>${label}</label><input class="inp" ${extra} value="${esc(val)}" oninput="updateSlide(${i},'${key}',this.value)"/></div>`;
+  };
+
+  const titles = ['SLIDE 1: HOOK CARD','SLIDE 2: CONTRAST / SPLIT','SLIDE 3: TWEET QUOTE','SLIDE 4: STEP-BY-STEP','SLIDE 5: STATISTIC HOOK','SLIDE 6: LEAD MAGNET CTA'];
+  let html = `<span class="slide-editor-title">${titles[i]}</span>`;
+
+  if (i === 0) {
+    html += field('Hook Headline','textarea',s.title,3,'title') +
+            field('Keyword Highlight (Accent Color)','input',s.accentWord,1,'accentWord') +
+            field('Subtext / Hook Summary','textarea',s.desc,3,'desc');
+  } else if (i === 1) {
+    html += field('Old Way Label','input',s.wrongTitle,1,'wrongTitle') +
+            field('Old Way Text','textarea',s.wrongText,2,'wrongText') +
+            `<hr class="divider"/>` +
+            field('New Way Label','input',s.rightTitle,1,'rightTitle') +
+            field('New Way Text','textarea',s.rightText,2,'rightText') +
+            field('Badge Text','input',s.statLabel,1,'statLabel');
+  } else if (i === 2) {
+    html += field('Tweet Message','textarea',s.tweetText,5,'tweetText') +
+            `<div class="step-grid">${field('Likes','input',s.likes,1,'likes')}${field('Retweets','input',s.retweets,1,'retweets')}</div>`;
+  } else if (i === 3) {
+    html += s.steps.map((st, sIdx) => `
+      <div class="step-box">
+        <span class="step-label">Step ${st.num}</span>
+        <input class="inp" value="${esc(st.title)}" placeholder="Step title" oninput="updateStep(3,${sIdx},'title',this.value)"/>
+        <textarea class="inp" rows="2" placeholder="Step body" oninput="updateStep(3,${sIdx},'body',this.value)">${esc(st.body)}</textarea>
+      </div>`).join('');
+  } else if (i === 4) {
+    html += field('Metric (e.g. 92%)','input',s.bigStat,1,'bigStat') +
+            `<div class="field"><label>Progress Value (0–100)</label><input class="inp" type="number" min="0" max="100" value="${s.progressVal}" oninput="updateSlide(4,'progressVal',parseInt(this.value)||0)"/></div>` +
+            field('Caption Text','textarea',s.statDesc,4,'statDesc');
+  } else if (i === 5) {
+    html += field('Closing Headline','textarea',s.ctaTitle,3,'ctaTitle') +
+            field('Button Text','input',s.ctaButton,1,'ctaButton') +
+            `<div class="field"><label>Steps (one per line)</label><textarea class="inp" rows="4" oninput="updateSlide(5,'ctaSteps',this.value.split('\\n'))">${esc(s.ctaSteps.join('\n'))}</textarea></div>`;
+  }
+  ed.innerHTML = html;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid-view');
+  grid.innerHTML = state.slides.map((s,i) => `
+    <div class="grid-card ${state.selectedSlide===i?'selected':''}" onclick="selectSlide(${i})">
+      <div class="grid-card-top">
+        <span class="slide-type">SLIDE ${s.id} — ${SLIDE_TYPES[i]}</span>
+        <div class="card-actions">
+          <button class="card-btn card-btn-edit" onclick="event.stopPropagation();selectSlide(${i});setView('focus')">Edit</button>
+          <button class="card-btn card-btn-png" onclick="event.stopPropagation();downloadPNG(${i})">PNG</button>
+        </div>
+      </div>
+      <div class="slide-frame">${slideSVG(i)}</div>
+    </div>`).join('');
+}
+
+function renderFocusView() {
+  const frame = document.getElementById('focus-frame');
+  frame.innerHTML = slideSVG(state.selectedSlide);
+  document.getElementById('focus-counter').textContent = `Slide ${state.selectedSlide+1} / 6`;
+}
+
+function renderCanvaTab() {
+  const keys = ['bg','accent','card','text'];
+  for (const k of keys) {
+    const v = state.colors[k];
+    const swatch = document.getElementById(`swatch-${k}`);
+    const btn = document.getElementById(`copy-${k}`);
+    if (swatch) swatch.style.background = v;
+    if (btn) btn.textContent = v.toUpperCase();
+  }
+  const fh = document.getElementById('canva-font-header');
+  const fb = document.getElementById('canva-font-body');
+  if (fh) fh.textContent = state.fonts.header;
+  if (fb) fb.textContent = state.fonts.body;
+}
+
+function syncBrandingInputs() {
+  document.getElementById('brand-tag').value = state.branding.tag;
+  document.getElementById('brand-author').value = state.branding.author;
+  document.getElementById('brand-handle').value = state.branding.handle;
+}
+
+// ─── EVENT HANDLERS ──────────────────────────────────────────────────────────
+function applyPreset(id) {
+  const p = PRESETS.find(x => x.id === id);
+  if (!p) return;
+  state.activePresetId = id;
+  state.colors = { bg:p.bg, card:p.card, text:p.text, textMuted:p.textMuted, accent:p.accent };
+  state.fonts = { header:p.fontHeader, body:p.fontBody };
+  document.getElementById('font-header').value = p.fontHeader;
+  document.getElementById('font-body').value = p.fontBody;
+  render();
+  toast(`Applied "${p.name}" styling!`);
+}
+
+function updateColor(key, val) {
+  state.colors[key] = val;
+  document.getElementById(`c-${key}-val`).textContent = val.toUpperCase();
+  renderGrid();
+  renderFocusView();
+  renderCanvaTab();
+  renderPresets();
+}
+
+function updateFont(type, val) {
+  state.fonts[type] = val;
+  renderGrid();
+  renderFocusView();
+}
+
+function updateBrand(key, val) {
+  state.branding[key] = val;
+  renderGrid();
+  renderFocusView();
+}
+
+function updateSlide(idx, key, val) {
+  state.slides[idx][key] = val;
+  renderGrid();
+  renderFocusView();
+}
+
+function updateStep(slideIdx, stepIdx, key, val) {
+  state.slides[slideIdx].steps[stepIdx][key] = val;
+  renderGrid();
+  renderFocusView();
+}
+
+function selectSlide(idx) {
+  state.selectedSlide = idx;
+  renderGrid();
+  renderFocusView();
+  renderSlideTabs();
+  renderSlideEditor();
+}
+
+function setView(v) {
+  state.view = v;
+  const grid = document.getElementById('grid-view');
+  const focus = document.getElementById('focus-view');
+  const nav = document.getElementById('nav-controls');
+  const title = document.getElementById('canvas-title');
+  document.getElementById('btn-grid').classList.toggle('active', v === 'grid');
+  document.getElementById('btn-focus').classList.toggle('active', v === 'focus');
+  grid.style.display = v === 'grid' ? 'grid' : 'none';
+  focus.style.display = v === 'focus' ? 'flex' : 'none';
+  nav.style.display = v === 'focus' ? 'flex' : 'none';
+  title.textContent = v === 'grid' ? '⚡ LIVE TEMPLATE BUNDLE PREVIEW (6 SLIDES)' : '⚡ FOCUS CREATIVE STUDIO';
+  if (v === 'focus') renderFocusView();
+}
+
+function navigate(dir) {
+  state.selectedSlide = (state.selectedSlide + dir + 6) % 6;
+  renderFocusView();
+  renderSlideTabs();
+}
+
+function setTab(t) {
+  state.activeTab = t;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['design','content','canva'][i] === t);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${t}`).classList.add('active');
+}
+
+function copyHex(key) {
+  const val = state.colors[key];
+  navigator.clipboard.writeText(val).catch(()=>{});
+  const btn = document.getElementById(`copy-${key}`);
+  if (btn) { btn.textContent = 'Copied ✓'; setTimeout(()=>{ btn.textContent = val.toUpperCase(); }, 2000); }
+  toast('Hex copied to clipboard!');
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+function getSVGEl(idx) { return document.querySelector(`#svg-slide-${idx}`); }
+
+function downloadSVG(idx) {
+  const el = getSVGEl(idx);
+  if (!el) return toast('SVG element not found');
+  const str = new XMLSerializer().serializeToString(el);
+  const blob = new Blob([str], { type:'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `Slide-${idx+1}-${state.branding.tag.replace(/\s+/g,'-')}.svg`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast(`Slide ${idx+1} downloaded as SVG!`);
+}
+
+function downloadPNG(idx) {
+  const el = getSVGEl(idx);
+  if (!el) return toast('SVG not found');
+  toast('Rendering high-res PNG…');
+  const str = new XMLSerializer().serializeToString(el);
+  const blob = new Blob([str], { type:'image/svg+xml;charset=utf-8' });
+  const blobURL = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080; canvas.height = 1350;
+    canvas.getContext('2d').drawImage(img, 0, 0, 1080, 1350);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = `Canva-Ready-Slide-${idx+1}.png`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    toast('PNG downloaded successfully!');
+  };
+  img.src = blobURL;
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
