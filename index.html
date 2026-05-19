@@ -1,724 +1,1104 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en" class="h-full bg-slate-950">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Telegram Channel Hub | Order by Added Date</title>
-  <!-- Google Fonts + Font Awesome -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <!-- Firebase Realtime Database SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-    }
-
-    body {
-      background: linear-gradient(145deg, #f8fafd 0%, #edf2f9 100%);
-      min-height: 100vh;
-      padding: 0;
-      margin: 0;
-    }
-
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 2rem 1rem;
-    }
-
-    /* Header Area */
-    .hero {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-
-    .hero h1 {
-      font-size: 2.5rem;
-      font-weight: 800;
-      background: linear-gradient(125deg, #1e96e0, #0f5e8a, #1e3b5c);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    .hero h1 i {
-      background: none;
-      color: #2a9df4;
-      margin-right: 12px;
-    }
-
-    .hero p {
-      color: #4a627a;
-      font-size: 1rem;
-      margin-top: 8px;
-    }
-
-    /* Ad Banner Top */
-    .ad-top {
-      display: flex;
-      justify-content: center;
-      margin: 1rem auto 1.5rem;
-      text-align: center;
-    }
-
-    /* Stats bar */
-    .stats-bar {
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
-    }
-
-    .stat-card {
-      background: white;
-      padding: 0.6rem 1.5rem;
-      border-radius: 60px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-      font-weight: 600;
-      color: #1e4663;
-    }
-
-    .stat-card i {
-      color: #2a9df4;
-      margin-right: 8px;
-    }
-
-    /* Channels Grid */
-    .channels-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin: 1rem 0 1.5rem 0;
-      flex-wrap: wrap;
-    }
-
-    .channels-header h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1e2f3e;
-    }
-
-    .order-badge {
-      background: #eef2fa;
-      padding: 5px 12px;
-      border-radius: 30px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #2c6282;
-    }
-
-    .channels-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .channel-card {
-      background: white;
-      border-radius: 24px;
-      overflow: hidden;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease;
-      border: 1px solid rgba(0, 0, 0, 0.03);
-      display: flex;
-      flex-direction: column;
-      animation: fadeIn 0.3s ease;
-      position: relative;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .channel-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.15);
-    }
-
-    .order-number {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      background: rgba(30, 150, 224, 0.9);
-      color: white;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      font-weight: 700;
-      z-index: 1;
-    }
-
-    .card-icon {
-      background: linear-gradient(135deg, #e9f3fe, #dceaff);
-      text-align: center;
-      padding: 1.2rem 0 0.5rem;
-      font-size: 2.8rem;
-      color: #2a9df4;
-    }
-
-    .card-content {
-      padding: 1rem 1.2rem;
-      flex: 1;
-    }
-
-    .channel-name {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: #0f2b3b;
-      margin-bottom: 0.5rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .channel-desc {
-      color: #5b6f82;
-      line-height: 1.45;
-      margin-bottom: 0.8rem;
-      font-size: 0.85rem;
-    }
-
-    .channel-meta {
-      background: #f8fafd;
-      padding: 5px 10px;
-      border-radius: 30px;
-      font-size: 0.7rem;
-      color: #2c5a74;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      word-break: break-all;
-    }
-
-    .card-actions {
-      display: flex;
-      gap: 8px;
-      padding: 0.8rem 1.2rem 1.2rem;
-      border-top: 1px solid #edf2f7;
-      background: #fefefe;
-    }
-
-    .join-btn {
-      flex: 1;
-      background: #27a0e5;
-      color: white;
-      padding: 10px 0;
-      text-align: center;
-      border-radius: 50px;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: 0.2s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .join-btn:hover {
-      background: #1e7eb8;
-      transform: scale(1.02);
-    }
-
-    /* Add Channel Section */
-    .add-channel-section {
-      background: white;
-      border-radius: 28px;
-      box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.08);
-      padding: 1.5rem;
-      margin: 1.5rem 0;
-      border: 1px solid rgba(0, 110, 255, 0.08);
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 1.2rem;
-      flex-wrap: wrap;
-    }
-
-    .section-header h2 {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: #0c4e6e;
-    }
-
-    .section-header h2 i {
-      color: #2a9df4;
-      margin-right: 8px;
-    }
-
-    .form-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .form-group {
-      flex: 1;
-      min-width: 200px;
-    }
-
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: #1f4b62;
-      font-size: 0.8rem;
-    }
-
-    label i {
-      margin-right: 6px;
-      color: #2a9df4;
-    }
-
-    input, textarea {
-      width: 100%;
-      padding: 12px 16px;
-      border: 2px solid #e2e8f0;
-      border-radius: 18px;
-      font-size: 0.9rem;
-      transition: 0.2s;
-    }
-
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: #2a9df4;
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 70px;
-    }
-
-    .form-actions {
-      text-align: right;
-      margin-top: 1rem;
-    }
-
-    .btn-primary {
-      background: linear-gradient(105deg, #1e96e0, #2a7eb0);
-      border: none;
-      padding: 10px 28px;
-      border-radius: 40px;
-      color: white;
-      font-weight: 700;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(30,150,224,0.3);
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 2.5rem;
-      background: white;
-      border-radius: 30px;
-      color: #8497a8;
-      grid-column: 1 / -1;
-    }
-
-    .loading-spinner {
-      text-align: center;
-      padding: 2rem;
-      color: #2a9df4;
-      grid-column: 1/-1;
-    }
-
-    /* Ad Sections */
-    .ad-native-container {
-      margin: 1.5rem 0;
-      text-align: center;
-    }
-
-    footer {
-      text-align: center;
-      margin-top: 2rem;
-      padding: 1rem;
-      color: #6a7f9b;
-      font-size: 0.75rem;
-    }
-
-    .helper-note {
-      background: #e8f4fd;
-      border-radius: 14px;
-      padding: 8px 12px;
-      margin-top: 10px;
-      font-size: 0.75rem;
-      color: #2c6282;
-    }
-
-    @media (max-width: 700px) {
-      .container {
-        padding: 1rem;
-      }
-      .hero h1 {
-        font-size: 1.8rem;
-      }
-      .channels-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .toast-msg {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #1f2f3e;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 40px;
-      z-index: 1000;
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
-      font-size: 0.85rem;
-    }
-  </style>
-</head>
-<body>
-
-<div class="container">
-  <div class="hero">
-    <h1><i class="fab fa-telegram"></i> Telegram Channel Hub</h1>
-    <p>Channels appear in the order they are added (Oldest First)</p>
-  </div>
-
-  <!-- Adsterra Banner 320x50 -->
-  <div class="ad-top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Bundle Kit Builder</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      atOptions = {
-        'key' : '8b50588544bfa320797976a2051bfa82',
-        'format' : 'iframe',
-        'height' : 50,
-        'width' : 320,
-        'params' : {}
-      };
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0B0F19',
+                            card: '#161D30',
+                            accent: '#3B82F6'
+                        }
+                    }
+                }
+            }
+        }
     </script>
-    <script src="https://www.highperformanceformat.com/8b50588544bfa320797976a2051bfa82/invoke.js"></script>
-  </div>
+    <!-- Google Fonts for Dynamic Previews -->
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Inter:wght@300;400;600;700&family=League+Spartan:wght@700;800&family=Montserrat:wght@400;700;800&family=Playfair+Display:ital,wght@0,700;1,400&family=Space+Grotesk:wght@500;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Smooth Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0F19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1F2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+        .canvas-container {
+            aspect-ratio: 4/5;
+        }
+        .reel-container {
+            aspect-ratio: 9/16;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-100 font-['Plus_Jakarta_Sans'] flex flex-col overflow-hidden">
 
-  <!-- Stats -->
-  <div class="stats-bar">
-    <div class="stat-card"><i class="fas fa-channels"></i> <span id="totalChannels">0</span> Channels</div>
-    <div class="stat-card"><i class="fas fa-sort-amount-down"></i> Added First → Shows First</div>
-  </div>
+    <!-- Header / Navbar -->
+    <header class="bg-brand-dark/80 backdrop-blur-md border-b border-slate-800 py-4 px-6 flex items-center justify-between shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-tr from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i class="fa-solid fa-wand-magic-sparkles text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-lg bg-gradient-to-r from-white via-slate-200 to-indigo-400 bg-clip-text text-transparent">SocialKit Builder</h1>
+                <p class="text-xs text-slate-400 font-medium">Design & Export High-Converting Bundles</p>
+            </div>
+        </div>
 
-  <!-- Channels List -->
-  <div class="channels-header">
-    <h2><i class="fas fa-list-ul"></i> All Channels</h2>
-    <div class="order-badge"><i class="fas fa-clock"></i> Oldest First</div>
-  </div>
-  <div id="channelList" class="channels-grid">
-    <div class="loading-spinner"><i class="fas fa-spinner fa-pulse"></i> Loading channels from Firebase...</div>
-  </div>
+        <div class="flex items-center space-x-3">
+            <button onclick="toggleDeliveryModal()" class="flex items-center space-x-2 bg-indigo-600/10 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600/20 px-4 py-2 rounded-xl transition text-sm font-semibold">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span>Generate Delivery Page</span>
+            </button>
+            <button onclick="exportAllAsImages()" class="flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-4 py-2 rounded-xl transition text-sm font-semibold shadow-lg shadow-indigo-600/20">
+                <i class="fa-solid fa-download"></i>
+                <span>Export Bundle ZIP</span>
+            </button>
+        </div>
+    </header>
 
-  <!-- Add Channel Section -->
-  <div class="add-channel-section" id="addChannelSection">
-    <div class="section-header">
-      <h2 id="formTitle"><i class="fas fa-plus-circle"></i> Add New Channel</h2>
+    <!-- Main Workspace -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- Left Control Sidebar -->
+        <aside class="w-80 md:w-96 bg-brand-dark border-r border-slate-800 p-6 overflow-y-auto flex flex-col space-y-6 shrink-0">
+            
+            <!-- Preset Niche Selectors -->
+            <div>
+                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-3">Select Niche Preset</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyPreset('tech')" class="preset-btn p-3 rounded-xl border border-indigo-500 bg-indigo-950/20 hover:bg-indigo-950/40 text-left transition flex flex-col space-y-1" id="preset-tech">
+                        <span class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-bolt mr-1"></i> Tech & AI</span>
+                        <span class="text-[10px] text-slate-400">Neon Mint / Dark Mode</span>
+                    </button>
+                    <button onclick="applyPreset('beige')" class="preset-btn p-3 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-900/80 text-left transition flex flex-col space-y-1" id="preset-beige">
+                        <span class="text-xs font-bold text-amber-100"><i class="fa-solid fa-leaf mr-1"></i> Minimalist Beige</span>
+                        <span class="text-[10px] text-slate-400">Latte / Aesthetic</span>
+                    </button>
+                    <button onclick="applyPreset('wealth')" class="preset-btn p-3 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-900/80 text-left transition flex flex-col space-y-1" id="preset-wealth">
+                        <span class="text-xs font-bold text-yellow-400"><i class="fa-solid fa-chart-line mr-1"></i> Wealth & Finance</span>
+                        <span class="text-[10px] text-slate-400">Royal Navy / Gold</span>
+                    </button>
+                    <button onclick="applyPreset('fitness')" class="preset-btn p-3 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-900/80 text-left transition flex flex-col space-y-1" id="preset-fitness">
+                        <span class="text-xs font-bold text-rose-500"><i class="fa-solid fa-dumbbell mr-1"></i> Energy & Fitness</span>
+                        <span class="text-[10px] text-slate-400">Pure Charcoal / Coral</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Custom Styling -->
+            <div class="border-t border-slate-800/80 pt-5">
+                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-3">Custom Brand Colors</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <span class="text-[10px] text-slate-400 block mb-1">Background</span>
+                        <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-lg p-1">
+                            <input type="color" id="color-bg" onchange="updateColors()" value="#121212" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                            <span class="text-[10px] font-mono text-slate-300 uppercase" id="val-bg">#121212</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-400 block mb-1">Card Box</span>
+                        <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-lg p-1">
+                            <input type="color" id="color-card" onchange="updateColors()" value="#1E1E1E" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                            <span class="text-[10px] font-mono text-slate-300 uppercase" id="val-card">#1E1E1E</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-400 block mb-1">Accent High</span>
+                        <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-lg p-1">
+                            <input type="color" id="color-accent" onchange="updateColors()" value="#00F5A0" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                            <span class="text-[10px] font-mono text-slate-300 uppercase" id="val-accent">#00F5A0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Font Customization -->
+            <div class="border-t border-slate-800/80 pt-5">
+                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-3">Brand Typography</label>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Header Font (Bold Hooks)</label>
+                        <select id="font-heading" onchange="updateFonts()" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <option value="'League Spartan', sans-serif">League Spartan (Aggressive, Tech)</option>
+                            <option value="'Archivo Black', sans-serif">Archivo Black (Heavy, Modern)</option>
+                            <option value="'Anton', sans-serif">Anton (Impact, Fitness)</option>
+                            <option value="'Playfair Display', serif">Playfair Display (Premium, Elegant)</option>
+                            <option value="'Space Grotesk', sans-serif">Space Grotesk (Sci-Fi, Creator)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Body Font (Legibility)</label>
+                        <select id="font-body" onchange="updateFonts()" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <option value="'Inter', sans-serif">Inter (Clean, Tech)</option>
+                            <option value="'Montserrat', sans-serif">Montserrat (Geometric, Brand)</option>
+                            <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta (Modern, Premium)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Editor Panel -->
+            <div class="border-t border-slate-800/80 pt-5 flex-1 flex flex-col space-y-4">
+                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Global Content Editor</label>
+                
+                <div class="space-y-3 flex-1">
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Main Hook Title</label>
+                        <input type="text" id="input-hook" oninput="updateContent()" value="3 Tools You Are Using Wrong." class="w-full bg-slate-900 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Highlight Word (Accent Color)</label>
+                        <input type="text" id="input-highlight" oninput="updateContent()" value="Wrong" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Niche Category Tag</label>
+                        <input type="text" id="input-tag" oninput="updateContent()" value="AI & SAAS INSIGHTS" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Author Name & Handle</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="input-author" oninput="updateContent()" value="Aarav Sharma" placeholder="Name" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <input type="text" id="input-handle" oninput="updateContent()" value="@aarav_tech" placeholder="Handle" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <!-- Carousel Slide Controlls -->
+                    <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/60 space-y-2">
+                        <span class="text-[10px] font-bold text-slate-400 block">CAROUSEL STEP EDITORS</span>
+                        <div>
+                            <span class="text-[9px] text-slate-400">Step 1</span>
+                            <input type="text" id="input-slide1" oninput="updateContent()" value="Stop copy-pasting code randomly without reading logs." class="w-full bg-slate-900 border border-slate-800 rounded-md py-1.5 px-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <span class="text-[9px] text-slate-400">Step 2</span>
+                            <input type="text" id="input-slide2" oninput="updateContent()" value="Use prompt-chaining instead of long mega-prompts." class="w-full bg-slate-900 border border-slate-800 rounded-md py-1.5 px-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Right Preview Canvas Workspace -->
+        <main class="flex-1 bg-slate-900/50 overflow-y-auto p-8 flex flex-col items-center">
+            
+            <!-- Quick View Switcher -->
+            <div class="flex items-center space-x-2 bg-slate-950/60 border border-slate-800 p-1.5 rounded-xl mb-8">
+                <button onclick="switchView('all')" id="view-all" class="view-tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 transition">
+                    All Previews (5 Layouts)
+                </button>
+                <button onclick="switchView('carousel')" id="view-carousel" class="view-tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition">
+                    Carousel Mode
+                </button>
+                <button onclick="switchView('reels')" id="view-reels" class="view-tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition">
+                    Reel / Shorts Covers
+                </button>
+            </div>
+
+            <!-- ALL LAYOUTS DISPLAY -->
+            <div id="all-layouts-grid" class="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full max-w-5xl">
+                
+                <!-- Layout 1: The Hook Post (1080x1350) -->
+                <div class="flex flex-col space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider"><i class="fa-regular fa-image mr-1"></i> Layout 1: The Hook Post (Portrait 4:5)</span>
+                        <button onclick="downloadTemplate('template-1', 'Hook-Post')" class="text-xs text-slate-400 hover:text-white transition flex items-center space-x-1 bg-slate-800/60 px-2 py-1 rounded">
+                            <i class="fa-solid fa-download"></i> <span>Export PNG</span>
+                        </button>
+                    </div>
+                    
+                    <div id="template-1" class="canvas-container w-full rounded-2xl p-8 relative overflow-hidden flex flex-col justify-between shadow-2xl shadow-black/40 border border-slate-800 transition-all duration-300" style="background-color: #121212;">
+                        <!-- Custom Gradient Overlays for high-production look -->
+                        <div class="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none"></div>
+                        <div class="absolute -bottom-40 -right-40 w-80 h-80 rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none"></div>
+
+                        <!-- Top Header Area of Card -->
+                        <div class="flex items-center justify-between z-10">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 rounded-full" style="background-color: #00F5A0;" id="t1-accent-dot"></div>
+                                <span class="text-[11px] font-bold tracking-widest text-slate-400 font-body uppercase" id="t1-tag">AI & SAAS INSIGHTS</span>
+                            </div>
+                            <i class="fa-brands fa-buffer text-slate-500 text-lg"></i>
+                        </div>
+
+                        <!-- Main Content Body -->
+                        <div class="my-auto z-10 flex flex-col space-y-5">
+                            <h2 class="text-3xl md:text-4xl font-extrabold leading-tight text-white tracking-tight" id="t1-title" style="font-family: 'League Spartan', sans-serif;">
+                                3 Tools You Are <span style="color: #00F5A0;" class="accent-text">Wrong</span>.
+                            </h2>
+                            <p class="text-xs md:text-sm text-slate-400 leading-relaxed max-w-[90%] font-body">
+                                Thousands of designers and marketers waste hours doing this the manual way. Here's a quick automation trick.
+                            </p>
+                        </div>
+
+                        <!-- Bottom Brand Area -->
+                        <div class="flex items-center justify-between border-t border-slate-800/80 pt-4 z-10">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                                    <i class="fa-solid fa-user text-xs text-slate-300"></i>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] font-bold text-slate-200 font-body" id="t1-author">Aarav Sharma</p>
+                                    <p class="text-[9px] text-slate-500 font-body" id="t1-handle">@aarav_tech</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-1.5 bg-slate-900/80 px-2.5 py-1.5 rounded-full border border-slate-800">
+                                <i class="fa-regular fa-bookmark text-[10px] text-slate-400"></i>
+                                <span class="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Save post</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layout 2: Twitter Mockup Slide (1080x1350) -->
+                <div class="flex flex-col space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider"><i class="fa-brands fa-twitter mr-1"></i> Layout 2: Elegant Twitter/Thread Post</span>
+                        <button onclick="downloadTemplate('template-2', 'Twitter-Mockup')" class="text-xs text-slate-400 hover:text-white transition flex items-center space-x-1 bg-slate-800/60 px-2 py-1 rounded">
+                            <i class="fa-solid fa-download"></i> <span>Export PNG</span>
+                        </button>
+                    </div>
+
+                    <div id="template-2" class="canvas-container w-full rounded-2xl p-8 relative overflow-hidden flex flex-col justify-between shadow-2xl shadow-black/40 border border-slate-800 transition-all duration-300" style="background-color: #121212;">
+                        <!-- Subtle Radial Light -->
+                        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05)_0%,transparent_70%)] pointer-events-none"></div>
+
+                        <!-- Top Niche Brand -->
+                        <div class="flex justify-between items-center z-10">
+                            <span class="text-[11px] font-bold tracking-widest text-slate-400 font-body uppercase" id="t2-tag">GROWTH FRAMEWORK</span>
+                            <div class="flex space-x-1">
+                                <div class="w-1.5 h-1.5 rounded-full bg-slate-700"></div>
+                                <div class="w-1.5 h-1.5 rounded-full bg-slate-700"></div>
+                                <div class="w-1.5 h-1.5 rounded-full bg-slate-700"></div>
+                            </div>
+                        </div>
+
+                        <!-- Tweet Card Box Layout -->
+                        <div class="my-auto z-10 p-6 rounded-2xl border border-slate-800/80 transition-all duration-300 flex flex-col space-y-4 shadow-xl" style="background-color: #1E1E1E;" id="t2-card-box">
+                            <!-- User Information Header -->
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-full bg-indigo-600/20 flex items-center justify-center border border-indigo-500/30">
+                                        <i class="fa-solid fa-code text-indigo-400 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center space-x-1">
+                                            <span class="text-xs font-bold text-white font-body" id="t2-author">Aarav Sharma</span>
+                                            <i class="fa-solid fa-circle-check text-blue-400 text-[10px]"></i>
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 font-body" id="t2-handle">@aarav_tech</span>
+                                    </div>
+                                </div>
+                                <i class="fa-brands fa-x-twitter text-slate-500 text-sm"></i>
+                            </div>
+
+                            <!-- Tweet Message Content -->
+                            <p class="text-sm md:text-base leading-relaxed text-slate-200 font-body" id="t2-tweet-body">
+                                Building in public is not about writing updates daily. It's about letting your users become part of your engineering breakthroughs and failures. That's real loyalty.
+                            </p>
+
+                            <!-- Custom Interactive Tweet Action Bar -->
+                            <div class="flex items-center justify-between border-t border-slate-800/60 pt-3 text-slate-500 text-[10px] font-semibold">
+                                <span class="hover:text-slate-300 transition"><i class="fa-regular fa-comment mr-1"></i> 142</span>
+                                <span class="hover:text-emerald-400 transition"><i class="fa-solid fa-retweet mr-1"></i> 849</span>
+                                <span class="hover:text-rose-400 transition"><i class="fa-regular fa-heart mr-1"></i> 3.2K</span>
+                                <span class="hover:text-blue-400 transition" style="color: #00F5A0;" id="t2-accent-stat"><i class="fa-regular fa-bookmark mr-1"></i> Save Draft</span>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="flex items-center justify-between text-[10px] text-slate-500 z-10">
+                            <span>Double tap to swipe</span>
+                            <span class="text-[9px] tracking-wider uppercase">Swipe Left &gt;&gt;</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layout 3: Comparison & Checklist Slide (1080x1350) -->
+                <div class="flex flex-col space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider"><i class="fa-solid fa-columns mr-1"></i> Layout 3: Contrast / Right Way vs Wrong Way</span>
+                        <button onclick="downloadTemplate('template-3', 'Comparison-Slide')" class="text-xs text-slate-400 hover:text-white transition flex items-center space-x-1 bg-slate-800/60 px-2 py-1 rounded">
+                            <i class="fa-solid fa-download"></i> <span>Export PNG</span>
+                        </button>
+                    </div>
+
+                    <div id="template-3" class="canvas-container w-full rounded-2xl p-8 relative overflow-hidden flex flex-col justify-between shadow-2xl shadow-black/40 border border-slate-800 transition-all duration-300" style="background-color: #121212;">
+                        
+                        <!-- Top Header -->
+                        <div class="flex items-center justify-between z-10">
+                            <span class="text-[11px] font-bold tracking-widest text-slate-400 font-body uppercase" id="t3-tag">SMART WORKFLOWS</span>
+                            <span class="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-1 rounded-md border border-indigo-500/20 font-bold">PRO-TIPS</span>
+                        </div>
+
+                        <!-- Comparison Cards Side-by-Side -->
+                        <div class="my-auto grid grid-cols-2 gap-3 z-10">
+                            
+                            <!-- Left: The Wrong Way -->
+                            <div class="rounded-xl p-4 border border-rose-500/20 bg-rose-500/5 flex flex-col justify-between space-y-4 h-48">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] font-bold tracking-widest text-rose-400 font-body">THE OLD WAY</span>
+                                    <i class="fa-solid fa-circle-xmark text-rose-500"></i>
+                                </div>
+                                <p class="text-xs text-slate-300 leading-relaxed font-body" id="t3-wrong-text">
+                                    Hiring a full marketing agency that takes months and lakhs of rupees to launch basic social campaigns.
+                                </p>
+                                <span class="text-[10px] text-rose-400 font-bold">Result: High Burn-rate</span>
+                            </div>
+
+                            <!-- Right: The Right Way -->
+                            <div class="rounded-xl p-4 border border-emerald-500/20 transition-all duration-300 flex flex-col justify-between space-y-4 h-48" style="background-color: #1E1E1E;" id="t3-right-box">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] font-bold tracking-widest font-body" style="color: #00F5A0;" id="t3-right-label">THE SMART WAY</span>
+                                    <i class="fa-solid fa-circle-check text-emerald-400" style="color: #00F5A0;" id="t3-right-icon"></i>
+                                </div>
+                                <p class="text-xs text-slate-200 leading-relaxed font-body" id="t3-right-text">
+                                    Using high-converting pre-made Canva bundle kits that keep your styling professional & instant.
+                                </p>
+                                <span class="text-[10px] font-bold" style="color: #00F5A0;" id="t3-accent-result">Result: Save 150+ hours</span>
+                            </div>
+
+                        </div>
+
+                        <!-- Bottom Credits -->
+                        <div class="flex justify-between items-center border-t border-slate-800/80 pt-4 z-10">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] font-bold text-slate-300 font-body" id="t3-author">Aarav Sharma</span>
+                            </div>
+                            <span class="text-[9px] text-slate-500 tracking-wider">Swipe to continue</span>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Layout 4: The 5-Page Carousel Step (1080x1350) -->
+                <div class="flex flex-col space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider"><i class="fa-solid fa-layer-group mr-1"></i> Layout 4: High-Engagement Slide / Action Steps</span>
+                        <button onclick="downloadTemplate('template-4', 'Carousel-Slide')" class="text-xs text-slate-400 hover:text-white transition flex items-center space-x-1 bg-slate-800/60 px-2 py-1 rounded">
+                            <i class="fa-solid fa-download"></i> <span>Export PNG</span>
+                        </button>
+                    </div>
+
+                    <div id="template-4" class="canvas-container w-full rounded-2xl p-8 relative overflow-hidden flex flex-col justify-between shadow-2xl shadow-black/40 border border-slate-800 transition-all duration-300" style="background-color: #121212;">
+                        <div class="absolute -top-30 -right-30 w-60 h-60 rounded-full bg-indigo-500/5 blur-[80px] pointer-events-none"></div>
+
+                        <!-- Slide Header Progress Indicator -->
+                        <div class="flex items-center justify-between z-10">
+                            <span class="text-[11px] font-bold tracking-widest text-slate-400 font-body uppercase" id="t4-tag">STEP-BY-STEP</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] text-slate-400 font-bold">Slide</span>
+                                <span class="text-xs text-white bg-indigo-600 px-2.5 py-0.5 rounded-full font-bold">02 / 05</span>
+                            </div>
+                        </div>
+
+                        <!-- Step Cards Flow -->
+                        <div class="my-auto z-10 flex flex-col space-y-4">
+                            <!-- Card Step A -->
+                            <div class="flex items-start space-x-4 p-4 rounded-xl border border-slate-800" style="background-color: #1E1E1E;" id="t4-card-a">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0" style="background-color: rgba(0, 245, 160, 0.1); color: #00F5A0;" id="t4-num-a">01</div>
+                                <p class="text-xs md:text-sm text-slate-300 leading-relaxed font-body" id="t4-step-1">
+                                    Stop copy-pasting code randomly without reading logs. Understand the mechanics.
+                                </p>
+                            </div>
+
+                            <!-- Card Step B -->
+                            <div class="flex items-start space-x-4 p-4 rounded-xl border border-slate-800" style="background-color: #1E1E1E;" id="t4-card-b">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0" style="background-color: rgba(0, 245, 160, 0.1); color: #00F5A0;" id="t4-num-b">02</div>
+                                <p class="text-xs md:text-sm text-slate-300 leading-relaxed font-body" id="t4-step-2">
+                                    Use prompt-chaining instead of long mega-prompts. Build isolated code modules.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Nav -->
+                        <div class="flex items-center justify-between border-t border-slate-800/80 pt-4 z-10">
+                            <span class="text-[10px] text-slate-500 font-body" id="t4-handle">@aarav_tech</span>
+                            <div class="flex space-x-1">
+                                <span class="w-4 h-1 rounded bg-slate-700"></span>
+                                <span class="w-8 h-1 rounded" style="background-color: #00F5A0;" id="t4-progress-bar"></span>
+                                <span class="w-4 h-1 rounded bg-slate-700"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layout 5: Reels / Shorts Cover (1080x1920) -->
+                <div class="flex flex-col space-y-2 xl:col-span-2 items-center">
+                    <div class="flex items-center justify-between w-full max-w-sm">
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider"><i class="fa-solid fa-mobile-screen mr-1"></i> Layout 5: Video Reels Cover (Vertical 9:16)</span>
+                        <button onclick="downloadTemplate('template-5', 'Reels-Cover')" class="text-xs text-slate-400 hover:text-white transition flex items-center space-x-1 bg-slate-800/60 px-2 py-1 rounded">
+                            <i class="fa-solid fa-download"></i> <span>Export PNG</span>
+                        </button>
+                    </div>
+
+                    <div id="template-5" class="reel-container w-full max-w-sm rounded-2xl p-8 relative overflow-hidden flex flex-col justify-between shadow-2xl shadow-black/40 border border-slate-800 transition-all duration-300" style="background-color: #121212;">
+                        <!-- Dramatic Light Leak Glow for Cover Dynamic look -->
+                        <div class="absolute top-10 -right-20 w-80 h-80 rounded-full bg-indigo-500/20 blur-[120px] pointer-events-none"></div>
+                        <div class="absolute bottom-20 -left-20 w-80 h-80 rounded-full bg-emerald-500/10 blur-[120px] pointer-events-none"></div>
+
+                        <!-- Top Brand / Meta Header -->
+                        <div class="flex items-center justify-between z-10">
+                            <span class="text-[10px] font-bold tracking-widest text-slate-400 font-body uppercase" id="t5-tag">AI & SAAS INSIGHTS</span>
+                            <div class="bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 rounded-full px-2.5 py-1 text-[9px] font-bold flex items-center space-x-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                <span>REELS TECH</span>
+                            </div>
+                        </div>
+
+                        <!-- Mid Safe Zone Header & Cover -->
+                        <div class="my-auto z-10 flex flex-col space-y-4 text-center items-center">
+                            <!-- Safe Zone Indicator box for reference -->
+                            <div class="text-[9px] font-bold tracking-widest text-indigo-400 uppercase bg-indigo-950/40 border border-indigo-900/40 px-3 py-1.5 rounded-full mb-2">
+                                Feed Preview Safe-Zone
+                            </div>
+                            
+                            <!-- Bold Reel Title -->
+                            <h2 class="text-4xl font-extrabold leading-[1.1] text-white tracking-tight px-2" id="t5-title" style="font-family: 'League Spartan', sans-serif;">
+                                3 Tools You Are <span style="color: #00F5A0;" class="accent-text">Wrong</span>.
+                            </h2>
+                            <div class="w-16 h-1 rounded-full my-3" style="background-color: #00F5A0;" id="t5-accent-bar"></div>
+                            <p class="text-xs text-slate-400 font-body max-w-xs">
+                                Stop scrolling and read this if you want to save up to 10 hours this weekend.
+                            </p>
+                        </div>
+
+                        <!-- Bottom Meta Info -->
+                        <div class="flex flex-col items-center space-y-2 text-center z-10">
+                            <p class="text-xs font-semibold text-slate-300 font-body" id="t5-author">Aarav Sharma</p>
+                            <p class="text-[9px] text-slate-500 tracking-wider font-body" id="t5-handle">@aarav_tech</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- CAROUSEL EXCLUSIVE MODE VIEW -->
+            <div id="carousel-exclusive-view" class="hidden w-full max-w-5xl flex flex-col items-center space-y-6">
+                <!-- Swipe Simulator -->
+                <div class="flex items-center space-x-4 mb-4">
+                    <button onclick="changeCarouselSlide(-1)" class="w-10 h-10 bg-slate-800 hover:bg-slate-700 text-white rounded-full flex items-center justify-center transition">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span class="text-sm text-slate-400 font-bold" id="carousel-slide-indicator">Slide 1 of 5 (Cover)</span>
+                    <button onclick="changeCarouselSlide(1)" class="w-10 h-10 bg-slate-800 hover:bg-slate-700 text-white rounded-full flex items-center justify-center transition">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="w-full max-w-md flex justify-center">
+                    <!-- Dynamic Slide Frame Container -->
+                    <div id="carousel-slide-view-frame" class="w-full">
+                        <!-- Instantiated clone will appear here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- REELS EXCLUSIVE MODE VIEW -->
+            <div id="reels-exclusive-view" class="hidden w-full max-w-5xl flex flex-col items-center space-y-6">
+                <p class="text-sm text-slate-400">Previewing layout within standard mobile device container mockup.</p>
+                <div class="border-[8px] border-slate-950 rounded-[40px] shadow-2xl p-2 bg-slate-950 w-full max-w-[340px]">
+                    <div class="rounded-[30px] overflow-hidden">
+                        <!-- Frame clone inside simulated mobile screen -->
+                        <div id="reels-phone-frame"></div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
     </div>
-    <form id="addChannelForm">
-      <div class="form-row">
-        <div class="form-group">
-          <label><i class="fas fa-heading"></i> Channel Name *</label>
-          <input type="text" id="channelName" placeholder="e.g., Crypto Updates, Tech News" required>
+
+    <!-- Generate Delivery Page / PDF Modal -->
+    <div id="delivery-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-brand-card border border-slate-800 w-full max-w-2xl rounded-2xl p-6 md:p-8 flex flex-col max-h-[90vh] overflow-y-auto shadow-2xl animate-[fadeIn_0.2s_ease-out]">
+            
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-file-pdf text-indigo-500 text-xl"></i>
+                    <h3 class="text-lg font-bold">PDF Delivery Page Generator</h3>
+                </div>
+                <button onclick="toggleDeliveryModal()" class="w-8 h-8 bg-slate-800/80 hover:bg-slate-700 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-sm text-slate-400 mb-6 leading-relaxed">
+                Design the "Access & Thank You" PDF Page that your buyers will download. When they click the action buttons in the PDF, they will get direct access to their Canva templates.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Form Settings -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 block mb-1">Bundle Title</label>
+                        <input type="text" id="pdf-bundle-title" oninput="updateDeliveryPreview()" value="Aesthetic Tech & AI Social Media Kit" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 block mb-1">Custom Message / Welcome Text</label>
+                        <textarea id="pdf-welcome-msg" oninput="updateDeliveryPreview()" rows="3" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">Thank you for purchasing our premium branding social template kit. Click the buttons below to load the ready templates directly inside Canva.</textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 block mb-1">Your Support Link / Email</label>
+                        <input type="text" id="pdf-support" oninput="updateDeliveryPreview()" value="support@aaravdesigns.com" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 block mb-1">Canva Template Shared Link</label>
+                        <input type="text" id="pdf-canva-link" value="https://www.canva.com/design/DAF..." placeholder="Paste your share template link" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-2 px-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Interactive PDF Preview Box -->
+                <div class="flex flex-col">
+                    <span class="text-xs font-bold text-slate-400 block mb-2 uppercase">PDF Page Live Preview</span>
+                    <div id="pdf-preview-box" class="flex-1 bg-white text-slate-900 p-6 rounded-xl shadow-inner flex flex-col justify-between border-4 border-slate-300 min-h-[300px]">
+                        
+                        <div>
+                            <!-- Header branding of Creator inside PDF -->
+                            <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-4">
+                                <span class="text-[10px] font-bold tracking-widest text-indigo-600">PREMIUM DOWNLOAD</span>
+                                <span class="text-[9px] text-slate-400">Digital Product</span>
+                            </div>
+
+                            <h4 id="pdf-preview-title" class="text-base font-extrabold text-slate-900 mb-2">Aesthetic Tech & AI Social Media Kit</h4>
+                            <p id="pdf-preview-desc" class="text-[11px] text-slate-600 leading-relaxed mb-4">Thank you for purchasing our premium branding social template kit. Click the buttons below to load the ready templates directly inside Canva.</p>
+                        </div>
+
+                        <!-- Buttons mock representing delivery hooks -->
+                        <div class="space-y-2">
+                            <a href="#" onclick="return false;" class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow transition">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Access Templates (50+ Pages)
+                            </a>
+                            <a href="#" onclick="return false;" class="block w-full text-center bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow transition">
+                                <i class="fa-brands fa-canva text-indigo-400 mr-2"></i> Access Reels Covers
+                            </a>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-3 mt-4 flex items-center justify-between text-[9px] text-slate-400">
+                            <span>Support: <span id="pdf-preview-support" class="text-indigo-600">support@aaravdesigns.com</span></span>
+                            <span>Secure Canva Link</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer modal triggers -->
+            <div class="flex items-center justify-end space-x-3 border-t border-slate-800 pt-5 mt-6">
+                <button onclick="toggleDeliveryModal()" class="px-5 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white transition">Cancel</button>
+                <button onclick="downloadDeliveryPDF()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-xl text-sm font-semibold transition flex items-center space-x-2">
+                    <i class="fa-solid fa-file-arrow-down"></i>
+                    <span>Export Delivery HTML-PDF</span>
+                </button>
+            </div>
+
         </div>
-        <div class="form-group">
-          <label><i class="fab fa-telegram"></i> Telegram Link *</label>
-          <input type="text" id="channelUrl" placeholder="t.me/username  or  t.me/joinchat/xxxx" required>
-        </div>
-      </div>
-      <div class="form-group">
-        <label><i class="fas fa-info-circle"></i> Description (Optional)</label>
-        <textarea id="channelDesc" placeholder="What is this channel about?"></textarea>
-      </div>
-      <div class="helper-note">
-        <i class="fas fa-check-circle"></i> Accepts all Telegram links: t.me/username , t.me/joinchat/... , t.me/+invite
-      </div>
-      <div class="form-actions">
-        <button type="submit" class="btn-primary" id="submitBtn"><i class="fas fa-save"></i> Add Channel</button>
-      </div>
-    </form>
-  </div>
+    </div>
 
-  <!-- Native Banner Ad -->
-  <div class="ad-native-container">
-    <script async="async" data-cfasync="false" src="https://pl27919310.profitablecpmratenetwork.com/c53d28cbe54123743f060b3be17eb371/invoke.js"></script>
-    <div id="container-c53d28cbe54123743f060b3be17eb371"></div>
-  </div>
+    <!-- Notification Toast Banners (Replaces raw alert) -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-  <!-- Social Bar Ad -->
-  <script src="https://pl27919102.profitablecpmratenetwork.com/ce/53/c8/ce53c831cc48f76015779081c3f40e32.js"></script>
+    <!-- Canvas Rendering Container (Hidden used for raw PNG rendering & exports) -->
+    <div id="hidden-canvas-render" class="hidden"></div>
 
-  <footer>
-    <i class="fab fa-telegram"></i> Data stored in Firebase Realtime Database • Channels shown in order of addition (Oldest First)
-  </footer>
-</div>
+    <!-- Core Javascript Mechanics -->
+    <script>
+        // Preset Niche Data Configs
+        const presets = {
+            tech: {
+                bg: '#121212',
+                card: '#1E1E1E',
+                accent: '#00F5A0',
+                h_font: "'League Spartan', sans-serif",
+                b_font: "'Inter', sans-serif",
+                tag: 'AI & SAAS INSIGHTS'
+            },
+            beige: {
+                bg: '#F9F6F0',
+                card: '#EAE3D2',
+                accent: '#8D5B4C',
+                h_font: "'Playfair Display', serif",
+                b_font: "'Montserrat', sans-serif",
+                tag: 'AESTHETIC & MIND'
+            },
+            wealth: {
+                bg: '#0A192F',
+                card: '#172A45',
+                accent: '#F5A623',
+                h_font: "'Archivo Black', sans-serif",
+                b_font: "'Inter', sans-serif",
+                tag: 'FINANCIAL WEALTH'
+            },
+            fitness: {
+                bg: '#080808',
+                card: '#111111',
+                accent: '#FF4757',
+                h_font: "'Anton', sans-serif",
+                b_font: "'Plus Jakarta Sans', sans-serif",
+                tag: 'NO PAIN NO GAIN'
+            }
+        };
 
-<!-- Popunder Ad (loads once) -->
-<script src="https://pl27919306.profitablecpmratenetwork.com/84/eb/8d/84eb8d070d994205359151034f4c5e6e.js"></script>
+        let activeNiche = 'tech';
+        let currentCarouselSlideIndex = 0;
 
-<div id="toastMsg" class="toast-msg"></div>
+        // Apply selected niche settings
+        function applyPreset(nicheName) {
+            activeNiche = nicheName;
+            const data = presets[nicheName];
 
-<script>
-  // ==================== FIREBASE REALTIME DATABASE CONFIGURATION ====================
-  const firebaseConfig = {
-    apiKey: "AIzaSyC4nik_P57h9Ks8ryj0pG2xYNX-ePXKXtY",
-    authDomain: "shoes-shopping-app-6a1d3.firebaseapp.com",
-    databaseURL: "https://shoes-shopping-app-6a1d3-default-rtdb.firebaseio.com",
-    projectId: "shoes-shopping-app-6a1d3",
-    storageBucket: "shoes-shopping-app-6a1d3.appspot.com",
-    messagingSenderId: "816065792865",
-    appId: "1:816065792865:web:b1d58fab547f98e4961320",
-    measurementId: "G-7BVQVYSMDF"
-  };
+            // Update UI selectors
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('border-indigo-500', 'bg-indigo-950/20');
+                btn.classList.add('border-slate-800', 'bg-slate-900/40');
+            });
+            const activeBtn = document.getElementById(`preset-${nicheName}`);
+            activeBtn.classList.remove('border-slate-800', 'bg-slate-900/40');
+            activeBtn.classList.add('border-indigo-500', 'bg-indigo-950/20');
 
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
-  
-  // Reference to "telegram" folder (node) in Realtime Database
-  const telegramRef = database.ref('telegram');
-  
-  // DOM Elements
-  const channelListDiv = document.getElementById('channelList');
-  const channelNameInput = document.getElementById('channelName');
-  const channelUrlInput = document.getElementById('channelUrl');
-  const channelDescInput = document.getElementById('channelDesc');
-  const submitBtn = document.getElementById('submitBtn');
-  const totalChannelsSpan = document.getElementById('totalChannels');
-  
-  // Helper Functions
-  function showToast(message, isError = false) {
-    const toast = document.getElementById('toastMsg');
-    toast.textContent = message;
-    toast.style.backgroundColor = isError ? '#d9534f' : '#1e4663';
-    toast.style.opacity = '1';
-    setTimeout(() => {
-      toast.style.opacity = '0';
-    }, 3000);
-  }
-  
-  // Telegram link validator - accepts ALL types including private invites
-  function isValidTelegramLink(url) {
-    if (!url || typeof url !== 'string') return false;
-    const trimmed = url.trim();
-    if (trimmed === "") return false;
-    
-    if (trimmed.match(/^(https?:\/\/)?(www\.)?(t\.me|telegram\.me|telegram\.dog)\/.+/i)) {
-      return true;
-    }
-    if (trimmed.match(/^t\.me\/.+/i)) {
-      return true;
-    }
-    if (trimmed.includes('t.me/') || trimmed.includes('telegram.me/')) {
-      return true;
-    }
-    return false;
-  }
-  
-  // Format URL for join button
-  function formatJoinUrl(rawUrl) {
-    let url = rawUrl.trim();
-    if (!/^https?:\/\//i.test(url)) {
-      url = 'https://' + url;
-    }
-    return url;
-  }
-  
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-      if (m === '&') return '&amp;';
-      if (m === '<') return '&lt;';
-      if (m === '>') return '&gt;';
-      return m;
-    });
-  }
-  
-  // Generate a unique ID for new channel (using timestamp + random for uniqueness)
-  function generateChannelId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
-  }
-  
-  // Render channels from Firebase Realtime Database - ORDERED BY createdAt (Oldest First)
-  // DELETE BUTTON REMOVED - Only Join button is shown
-  function renderChannels() {
-    channelListDiv.innerHTML = `<div class="loading-spinner"><i class="fas fa-spinner fa-pulse"></i> Loading channels from Firebase...</div>`;
-    
-    // Listen for realtime updates from 'telegram' node
-    telegramRef.on('value', (snapshot) => {
-      const channelsData = snapshot.val();
-      const channels = [];
-      
-      if (channelsData) {
-        // Convert object to array with IDs
-        Object.keys(channelsData).forEach(key => {
-          channels.push({
-            id: key,
-            ...channelsData[key]
-          });
-        });
-        // Sort by createdAt (OLDEST FIRST - ascending order)
-        // Earlier added channels have smaller timestamp, so they come first
-        channels.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-      }
-      
-      // Update total count
-      totalChannelsSpan.innerText = channels.length;
-      
-      if (channels.length === 0) {
-        channelListDiv.innerHTML = `<div class="empty-state"><i class="fab fa-telegram-plane"></i><h3>No channels yet</h3><p>Use the form below to add your first channel! Data will be stored in Firebase Realtime DB under "telegram" folder.</p><p style="margin-top:10px;">✨ The first channel you add will appear at the top.</p></div>`;
-        return;
-      }
-      
-      let html = '';
-      channels.forEach((ch, index) => {
-        const name = ch.name || 'Unnamed';
-        const url = ch.url || '#';
-        const desc = ch.description || 'Join for updates and community.';
-        const displayUrl = formatJoinUrl(url);
-        const safeName = escapeHtml(name);
-        const safeDesc = escapeHtml(desc);
-        const safeUrl = escapeHtml(url);
-        
-        const isPrivate = url.includes('joinchat') || url.includes('/+') || url.includes('+');
-        const orderNumber = index + 1;
-        
-        // Card with ONLY Join button - NO delete button
-        html += `
-          <div class="channel-card" data-id="${ch.id}">
-            <div class="order-number">${orderNumber}</div>
-            <div class="card-icon">
-              <i class="fab fa-telegram-plane"></i>
-            </div>
-            <div class="card-content">
-              <div class="channel-name">
-                ${safeName}
-                ${isPrivate ? '<span style="background:#eef2fa; font-size:0.65rem; padding:2px 8px; border-radius:20px;"><i class="fas fa-lock"></i> Private</span>' : ''}
-              </div>
-              <p class="channel-desc">${safeDesc}</p>
-              <div class="channel-meta">
-                <i class="fas fa-link"></i> ${safeUrl.length > 35 ? safeUrl.substring(0, 32) + '...' : safeUrl}
-              </div>
-            </div>
-            <div class="card-actions">
-              <a href="${displayUrl}" target="_blank" rel="noopener noreferrer" class="join-btn"><i class="fab fa-telegram"></i> Join Channel</a>
-            </div>
-          </div>
-        `;
-      });
-      
-      channelListDiv.innerHTML = html;
-      
-    }, (error) => {
-      console.error("Firebase read error:", error);
-      channelListDiv.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Error Loading Channels</h3><p>${error.message}</p><p style="margin-top:10px;">⚠️ Make sure Realtime Database is created in Firebase Console with rules: { "rules": { ".read": true, ".write": true } }</p></div>`;
-    });
-  }
-  
-  // ADD channel to Firebase Realtime Database under "telegram" folder
-  async function addChannel() {
-    const name = channelNameInput.value.trim();
-    let url = channelUrlInput.value.trim();
-    const description = channelDescInput.value.trim();
-    
-    // Validation
-    if (!name) {
-      showToast("❌ Channel name is required", true);
-      return false;
-    }
-    if (!url) {
-      showToast("❌ Telegram link is required", true);
-      return false;
-    }
-    
-    if (!isValidTelegramLink(url)) {
-      showToast("❌ Invalid Telegram link! Use t.me/username or t.me/joinchat/xxxx", true);
-      return false;
-    }
-    
-    // Generate unique ID for the channel
-    const channelId = generateChannelId();
-    
-    // Prepare data object with createdAt timestamp for ordering
-    const channelData = {
-      name: name,
-      url: url,
-      description: description || "Join this Telegram channel for latest updates",
-      createdAt: Date.now()  // Timestamp for ordering (smaller = older, so first added appears first)
-    };
-    
-    try {
-      // Store data in Firebase Realtime Database under "telegram" folder
-      await telegramRef.child(channelId).set(channelData);
-      
-      // Clear form
-      channelNameInput.value = '';
-      channelUrlInput.value = '';
-      channelDescInput.value = '';
-      
-      showToast("✅ Channel added successfully! It will appear in order of addition.");
-      return true;
-      
-    } catch (error) {
-      console.error("Firebase write error:", error);
-      showToast("❌ Error: " + error.message, true);
-      return false;
-    }
-  }
-  
-  // Form submit handler - Add channel button click
-  const addForm = document.getElementById('addChannelForm');
-  addForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await addChannel();
-  });
-  
-  // Check if Firebase Realtime Database is accessible
-  function checkDatabaseConnection() {
-    const connectedRef = database.ref('.info/connected');
-    connectedRef.on('value', (snap) => {
-      if (snap.val() === true) {
-        console.log("✅ Connected to Firebase Realtime Database");
-        showToast("Connected to Firebase! Ready to add channels.", false);
-      } else {
-        console.log("❌ Not connected to Firebase");
-      }
-    });
-  }
-  
-  // Initialize app - start listening for realtime updates
-  function init() {
-    checkDatabaseConnection();
-    renderChannels();
-  }
-  
-  // Start the app
-  init();
-  
-  console.log("App initialized - Delete button removed. Channels ordered by createdAt (Oldest First)");
-  console.log("Data path: https://shoes-shopping-app-6a1d3-default-rtdb.firebaseio.com/telegram");
-</script>
+            // Apply style values to DOM inputs
+            document.getElementById('color-bg').value = data.bg;
+            document.getElementById('color-card').value = data.card;
+            document.getElementById('color-accent').value = data.accent;
+            document.getElementById('font-heading').value = data.h_font;
+            document.getElementById('font-body').value = data.b_font;
+            document.getElementById('input-tag').value = data.tag;
+
+            // Trigger updates
+            updateColors();
+            updateFonts();
+            updateContent();
+            showToast(`Applied ${nicheName.toUpperCase()} Preset Assets!`);
+        }
+
+        // Live update of background, boxes, accent colors
+        function updateColors() {
+            const bg = document.getElementById('color-bg').value;
+            const card = document.getElementById('color-card').value;
+            const accent = document.getElementById('color-accent').value;
+
+            // Update color value labels
+            document.getElementById('val-bg').innerText = bg;
+            document.getElementById('val-card').innerText = card;
+            document.getElementById('val-accent').innerText = accent;
+
+            // Theme adaptation logic (if BG is light, we use dark text for templates)
+            const isLightBg = isColorLight(bg);
+            const mainTextColor = isLightBg ? '#121212' : '#FFFFFF';
+            const subTextColor = isLightBg ? '#4A4A4A' : '#94A3B8';
+            const borderLinesColor = isLightBg ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)';
+
+            // Array of all 5 main template DOM IDs
+            const templates = ['template-1', 'template-2', 'template-3', 'template-4', 'template-5'];
+
+            templates.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+
+                // Set main Background
+                el.style.backgroundColor = bg;
+                el.style.borderColor = borderLinesColor;
+
+                // Adjust textual colors
+                const titles = el.querySelectorAll('h2, h3, .text-white');
+                titles.forEach(t => t.style.color = mainTextColor);
+
+                const descs = el.querySelectorAll('p, .text-slate-400');
+                descs.forEach(d => d.style.color = subTextColor);
+
+                // Update customized Accent elements
+                const accentTexts = el.querySelectorAll('.accent-text');
+                accentTexts.forEach(at => at.style.color = accent);
+
+                const accentBar = el.querySelector('#t5-accent-bar');
+                if (accentBar) accentBar.style.backgroundColor = accent;
+                
+                const accentDot = el.querySelector('#t1-accent-dot');
+                if (accentDot) accentDot.style.backgroundColor = accent;
+            });
+
+            // Specific Box elements in Layout 2, 3, 4
+            const boxes = [
+                document.getElementById('t2-card-box'),
+                document.getElementById('t3-right-box'),
+                document.getElementById('t4-card-a'),
+                document.getElementById('t4-card-b')
+            ];
+            boxes.forEach(box => {
+                if (!box) return;
+                box.style.backgroundColor = card;
+                box.style.borderColor = borderLinesColor;
+            });
+
+            // Extra accent highlights
+            const rightLabel = document.getElementById('t3-right-label');
+            if (rightLabel) rightLabel.style.color = accent;
+
+            const rightIcon = document.getElementById('t3-right-icon');
+            if (rightIcon) rightIcon.style.color = accent;
+
+            const rightResult = document.getElementById('t3-accent-result');
+            if (rightResult) rightResult.style.color = accent;
+
+            const stepNumA = document.getElementById('t4-num-a');
+            const stepNumB = document.getElementById('t4-num-b');
+            if (stepNumA) {
+                stepNumA.style.color = accent;
+                stepNumA.style.backgroundColor = accent + '1a'; // 10% opacity hex extension
+            }
+            if (stepNumB) {
+                stepNumB.style.color = accent;
+                stepNumB.style.backgroundColor = accent + '1a';
+            }
+
+            const t4ProgressBar = document.getElementById('t4-progress-bar');
+            if (t4ProgressBar) t4ProgressBar.style.backgroundColor = accent;
+
+            const t2AccentStat = document.getElementById('t2-accent-stat');
+            if (t2AccentStat) t2AccentStat.style.color = accent;
+
+            // Update focus modes if they are rendering
+            syncViewframes();
+        }
+
+        // Font family selection listener
+        function updateFonts() {
+            const hFont = document.getElementById('font-heading').value;
+            const bFont = document.getElementById('font-body').value;
+
+            // Apply font-family directly to DOM Elements
+            const h2Tags = document.querySelectorAll('h2');
+            h2Tags.forEach(h => h.style.fontFamily = hFont);
+
+            const bodyElements = document.querySelectorAll('.font-body');
+            bodyElements.forEach(be => be.style.fontFamily = bFont);
+
+            syncViewframes();
+        }
+
+        // Global content update mapping to specific templates
+        function updateContent() {
+            const hookText = document.getElementById('input-hook').value;
+            const highlightWord = document.getElementById('input-highlight').value;
+            const tagText = document.getElementById('input-tag').value;
+            const authorText = document.getElementById('input-author').value;
+            const handleText = document.getElementById('input-handle').value;
+
+            const s1Text = document.getElementById('input-slide1').value;
+            const s2Text = document.getElementById('input-slide2').value;
+
+            // Accent Word insertion replacement logic
+            let titleHTML = hookText;
+            if (highlightWord) {
+                const regex = new RegExp(`(${escapeRegExp(highlightWord)})`, 'gi');
+                titleHTML = hookText.replace(regex, `<span class="accent-text" style="color: ${document.getElementById('color-accent').value};">$1</span>`);
+            }
+
+            // Write dynamically into Preview items
+            document.getElementById('t1-title').innerHTML = titleHTML;
+            document.getElementById('t5-title').innerHTML = titleHTML;
+
+            document.getElementById('t1-tag').innerText = tagText;
+            document.getElementById('t2-tag').innerText = tagText;
+            document.getElementById('t3-tag').innerText = tagText;
+            document.getElementById('t4-tag').innerText = tagText;
+            document.getElementById('t5-tag').innerText = tagText;
+
+            document.getElementById('t1-author').innerText = authorText;
+            document.getElementById('t2-author').innerText = authorText;
+            document.getElementById('t3-author').innerText = authorText;
+            document.getElementById('t5-author').innerText = authorText;
+
+            document.getElementById('t1-handle').innerText = handleText;
+            document.getElementById('t2-handle').innerText = handleText;
+            document.getElementById('t5-handle').innerText = handleText;
+            document.getElementById('t4-handle').innerText = handleText;
+
+            // Specific Slide / Cards Step text
+            document.getElementById('t4-step-1').innerText = s1Text;
+            document.getElementById('t4-step-2').innerText = s2Text;
+
+            // Update tweet and comparison texts dynamically if needed to match theme
+            document.getElementById('t2-tweet-body').innerText = `Building in public is not about writing updates daily. It's about letting your users become part of your engineering breakthroughs and failures. That's real loyalty to ${authorText}.`;
+
+            syncViewframes();
+        }
+
+        // Helper for text matching safety
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Color relative luminance helper for dynamic light vs dark text adapting
+        function isColorLight(color) {
+            const hex = color.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+            return brightness > 140; // True if color is close to white/bright
+        }
+
+        // View Mode Switcher
+        function switchView(mode) {
+            const allBtn = document.getElementById('view-all');
+            const carouselBtn = document.getElementById('view-carousel');
+            const reelsBtn = document.getElementById('view-reels');
+
+            // Reset tab highlights
+            [allBtn, carouselBtn, reelsBtn].forEach(b => {
+                b.className = "view-tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition";
+            });
+
+            // Hide all sub views
+            document.getElementById('all-layouts-grid').classList.add('hidden');
+            document.getElementById('carousel-exclusive-view').classList.add('hidden');
+            document.getElementById('reels-exclusive-view').classList.add('hidden');
+
+            if (mode === 'all') {
+                allBtn.className = "view-tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 transition";
+                document.getElementById('all-layouts-grid').classList.remove('hidden');
+            } else if (mode === 'carousel') {
+                carouselBtn.className = "view-tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 transition";
+                document.getElementById('carousel-exclusive-view').classList.remove('hidden');
+                syncCarouselPreview();
+            } else if (mode === 'reels') {
+                reelsBtn.className = "view-tab-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 transition";
+                document.getElementById('reels-exclusive-view').classList.remove('hidden');
+                syncReelPreview();
+            }
+        }
+
+        // Synchronize clones with original preview elements
+        function syncViewframes() {
+            if (!document.getElementById('carousel-exclusive-view').classList.contains('hidden')) {
+                syncCarouselPreview();
+            }
+            if (!document.getElementById('reels-exclusive-view').classList.contains('hidden')) {
+                syncReelPreview();
+            }
+        }
+
+        function syncCarouselPreview() {
+            const targetSlideID = currentCarouselSlideIndex === 0 ? 'template-1' : (currentCarouselSlideIndex === 1 ? 'template-2' : (currentCarouselSlideIndex === 2 ? 'template-3' : 'template-4'));
+            
+            const frame = document.getElementById('carousel-slide-view-frame');
+            frame.innerHTML = '';
+            
+            const originalNode = document.getElementById(targetSlideID);
+            const clone = originalNode.cloneNode(true);
+            clone.id = "carousel-slide-clone";
+            clone.className = "canvas-container w-full rounded-2xl p-8 relative overflow-hidden flex flex-col justify-between shadow-2xl shadow-black/40 border border-slate-800";
+            
+            frame.appendChild(clone);
+            document.getElementById('carousel-slide-indicator').innerText = `Slide ${currentCarouselSlideIndex + 1} of 4 (Interactive Bundle View)`;
+        }
+
+        function changeCarouselSlide(direction) {
+            currentCarouselSlideIndex = (currentCarouselSlideIndex + direction + 4) % 4;
+            syncCarouselPreview();
+        }
+
+        // Delivery PDF Maker Interface Control
+        function toggleDeliveryModal() {
+            const m = document.getElementById('delivery-modal');
+            m.classList.toggle('hidden');
+        }
+
+        function updateDeliveryPreview() {
+            const title = document.getElementById('pdf-bundle-title').value;
+            const desc = document.getElementById('pdf-welcome-msg').value;
+            const support = document.getElementById('pdf-support').value;
+
+            document.getElementById('pdf-preview-title').innerText = title;
+            document.getElementById('pdf-preview-desc').innerText = desc;
+            document.getElementById('pdf-preview-support').innerText = support;
+        }
+
+        // Beautiful Toast triggers for native actions
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            toast.className = `p-4 rounded-xl border bg-brand-card shadow-lg text-sm flex items-center space-x-3 pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0`;
+            
+            if (type === 'success') {
+                toast.classList.add('border-emerald-500/30');
+                toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> <span class="text-slate-200">${message}</span>`;
+            } else {
+                toast.classList.add('border-rose-500/30');
+                toast.innerHTML = `<i class="fa-solid fa-circle-exclamation text-rose-400"></i> <span class="text-slate-200">${message}</span>`;
+            }
+
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            // Close automatically after 3.5s
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-10px]');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Export Template View to high quality file (simulating canvas save)
+        function downloadTemplate(elementId, fileName) {
+            showToast(`Generating high-quality assets for ${fileName}...`);
+            
+            // In a standalone preview iframe, we simulate the output as a clean self-contained printable webpage / SVG export format
+            const el = document.getElementById(elementId);
+            const inlineStyles = `
+                background-color: ${el.style.backgroundColor};
+                border-color: ${el.style.borderColor};
+                font-family: ${document.getElementById('font-body').value};
+            `;
+
+            const wrapperHTML = `
+                <html>
+                <head>
+                    <title>${fileName}</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Inter:wght@400;700&family=League+Spartan:wght@700&family=Montserrat:wght@400;700&family=Playfair+Display:wght@700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                </head>
+                <body class="bg-slate-950 flex items-center justify-center h-screen">
+                    <div class="w-[500px] h-[625px] rounded-2xl p-10 relative overflow-hidden flex flex-col justify-between shadow-2xl border" style="${inlineStyles}">
+                        ${el.innerHTML}
+                    </div>
+                </body>
+                </html>
+            `;u
+
+            // Create a temporary link to download raw HTML template asset
+            const blob = new Blob([wrapperHTML], {type: 'text/html'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${fileName}-template-kit.html`;
+            link.click();
+            
+            showToast(`${fileName} exported successfully! Opening in your workspace.`);
+        }
+
+        // Bundle Zipping simulation (multiple assets)
+        function exportAllAsImages() {
+            showToast("Packaging all 5 Premium Templates inside ZIP format...", "success");
+            
+            // Export the complete interactive kit bundle config
+            const bundleConfig = {
+                niche: activeNiche,
+                bg: document.getElementById('color-bg').value,
+                card: document.getElementById('color-card').value,
+                accent: document.getElementById('color-accent').value,
+                headingFont: document.getElementById('font-heading').value,
+                bodyFont: document.getElementById('font-body').value,
+                hook: document.getElementById('input-hook').value,
+                tag: document.getElementById('input-tag').value,
+                author: document.getElementById('input-author').value,
+                handle: document.getElementById('input-handle').value,
+                step1: document.getElementById('input-slide1').value,
+                step2: document.getElementById('input-slide2').value
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(bundleConfig, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "brand-bundle-config.json");
+            dlAnchorElem.click();
+
+            showToast("Kit configurations downloaded. Importable in Canva or Figma!");
+        }
+
+        // Export PDF Delivery HTML Template
+        function downloadDeliveryPDF() {
+            const title = document.getElementById('pdf-bundle-title').value;
+            const desc = document.getElementById('pdf-welcome-msg').value;
+            const support = document.getElementById('pdf-support').value;
+            const link = document.getElementById('pdf-canva-link').value;
+
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Access Your Social Media Templates Bundle</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                </head>
+                <body class="bg-slate-50 font-['Plus_Jakarta_Sans'] flex items-center justify-center min-h-screen p-6">
+                    <div class="bg-white border border-slate-200 w-full max-w-xl rounded-3xl p-8 shadow-xl flex flex-col justify-between min-h-[500px]">
+                        
+                        <div>
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                                <div class="flex items-center space-x-2 text-indigo-600">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+                                    <span class="text-xs font-bold tracking-widest uppercase">Canva Access Gate</span>
+                                </div>
+                                <span class="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md border border-emerald-100 font-bold">VERIFIED CUSTOMER</span>
+                            </div>
+
+                            <h1 class="text-2xl font-extrabold text-slate-900 mb-4 leading-tight">${title}</h1>
+                            <p class="text-sm text-slate-600 leading-relaxed mb-6">${desc}</p>
+                        </div>
+
+                        <div class="space-y-3">
+                            <a href="${link || '#'}" target="_blank" class="block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-sm shadow-md shadow-indigo-500/10 transition">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Click Here to Access Templates (Canva Link)
+                            </a>
+                            <a href="#" onclick="window.print(); return false;" class="block w-full text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl text-xs transition">
+                                <i class="fa-solid fa-print mr-2"></i> Save/Print this Access Sheet
+                            </a>
+                        </div>
+
+                        <div class="border-t border-slate-100 pt-5 mt-6 flex items-center justify-between text-xs text-slate-400">
+                            <span>Support Enquiries: <span class="text-indigo-600 font-semibold">${support}</span></span>
+                            <span>Secure Download</span>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob([htmlContent], {type: 'text/html'});
+            const dlLink = document.createElement('a');
+            dlLink.href = URL.createObjectURL(blob);
+            dlLink.download = "Access_Canva_Bundle_Sheet.html";
+            dlLink.click();
+
+            showToast("Delivery page HTML successfully generated! Save it to your computer.");
+            toggleDeliveryModal();
+        }
+
+        // Initialize Settings
+        window.onload = function() {
+            applyPreset('tech');
+        }
+    </script>
 </body>
-      </html>
+                          </html>
